@@ -9,7 +9,7 @@ export const MINTS = {
 };
 
 export const DEX_PID = {
-  localnet: new PublicKey("5CmWtUihvSrJpaUrpJ3H1jUa9DRjYz4v2xs6c3EgQWMf"),
+  localnet: new PublicKey("zDEXqXEG7gAyxb1Kg9mK5fPnUdENCGKzWrM21RMdWRq"),
   devnet: new PublicKey("5CmWtUihvSrJpaUrpJ3H1jUa9DRjYz4v2xs6c3EgQWMf"),
   mainnet: new PublicKey("zDEXqXEG7gAyxb1Kg9mK5fPnUdENCGKzWrM21RMdWRq"),
 };
@@ -47,9 +47,9 @@ export const SPREAD_ACCOUNT_ASSET_OFFSET = 2305;
 
 export const PYTH_PRICE_FEEDS = {
   localnet: {
-    [Asset.SOL]: new PublicKey("2pRCJksgaoKRMqBfa7NTdd6tLYe9wbDFGCcCCZ6si3F7"),
-    [Asset.BTC]: new PublicKey("9WD5hzrwEtwbYyZ34BRnrSS11TzD7PTMyszKV5Ur4JxJ"),
-    [Asset.ETH]: new PublicKey("FkUZhotvECPTBEXXzxBPjnJu6vPiQmptKyUDSXapBgHJ"),
+    [Asset.SOL]: new PublicKey("GhKSLwUKDdVAKVLbJzsFdBfc2Mj8ZGMR4Hzv9n549Umd"),
+    [Asset.BTC]: new PublicKey("7pZtdiPa9NwcfCjFaR4bijh9tLrps4FmFgSuWDY3aMmz"),
+    [Asset.ETH]: new PublicKey("6z78Hvb9y8d6DS5GEVryHMFJvV5KmfMaHEdWhELHAnkP"),
   },
   devnet: {
     [Asset.SOL]: new PublicKey("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"),
@@ -64,7 +64,7 @@ export const PYTH_PRICE_FEEDS = {
 };
 
 export const USDC_MINT_ADDRESS = {
-  localnet: new PublicKey("6PEh8n3p7BbCTykufbq1nSJYAZvUp6gSwEANAs1ZhsCX"),
+  localnet: new PublicKey("8fS1CafjFkV3ozmEosUKTSHASDReaAtttRcxRR3RkfJV"),
   devnet: new PublicKey("6PEh8n3p7BbCTykufbq1nSJYAZvUp6gSwEANAs1ZhsCX"),
   mainnet: new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
 };
