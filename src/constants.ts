@@ -64,7 +64,7 @@ export const PYTH_PRICE_FEEDS = {
 };
 
 export const USDC_MINT_ADDRESS = {
-  localnet: new PublicKey("8fS1CafjFkV3ozmEosUKTSHASDReaAtttRcxRR3RkfJV"),
+  localnet: new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
   devnet: new PublicKey("6PEh8n3p7BbCTykufbq1nSJYAZvUp6gSwEANAs1ZhsCX"),
   mainnet: new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
 };
