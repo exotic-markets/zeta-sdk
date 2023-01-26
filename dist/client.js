@@ -66,6 +66,9 @@ class Client {
      * Client margin account address.
      */
     get publicKey() {
+        if (this._delegatorKey != undefined) {
+            return this._delegatorKey;
+        }
         return this.provider.wallet.publicKey;
     }
     /**
@@ -89,7 +92,11 @@ class Client {
     get subClients() {
         return this._subClients;
     }
+    get delegatorKey() {
+        return this._delegatorKey;
+    }
     constructor(connection, wallet, opts) {
+        this._delegatorKey = undefined;
         this._provider = new anchor.AnchorProvider(connection, wallet, opts);
         this._subClients = new Map();
         this._marginAccountToAsset = new Map();
@@ -97,12 +104,17 @@ class Client {
         this._referrerAccount = null;
         this._referrerAlias = null;
     }
-    static async load(connection, wallet, opts = utils.defaultCommitment(), callback = undefined, throttle = false) {
+    static async load(connection, wallet, opts = utils.defaultCommitment(), callback = undefined, throttle = false, delegator = undefined) {
         let client = new Client(connection, wallet, opts);
-        client._usdcAccountAddress = await utils.getAssociatedTokenAddress(exchange_1.exchange.usdcMintAddress, wallet.publicKey);
+        let owner = wallet.publicKey;
+        if (delegator != undefined) {
+            owner = delegator;
+            client._delegatorKey = delegator;
+        }
+        client._usdcAccountAddress = await utils.getAssociatedTokenAddress(exchange_1.exchange.usdcMintAddress, owner);
         client._whitelistDepositAddress = undefined;
         try {
-            let [whitelistDepositAddress, _whitelistTradingFeesNonce] = await utils.getUserWhitelistDepositAccount(exchange_1.exchange.programId, wallet.publicKey);
+            let [whitelistDepositAddress, _whitelistTradingFeesNonce] = await utils.getUserWhitelistDepositAccount(exchange_1.exchange.programId, owner);
             await exchange_1.exchange.program.account.whitelistDepositAccount.fetch(whitelistDepositAddress);
             console.log("User is whitelisted for unlimited deposits into zeta.");
             client._whitelistDepositAddress = whitelistDepositAddress;
@@ -110,14 +122,14 @@ class Client {
         catch (e) { }
         client._whitelistTradingFeesAddress = undefined;
         try {
-            let [whitelistTradingFeesAddress, _whitelistTradingFeesNonce] = await utils.getUserWhitelistTradingFeesAccount(exchange_1.exchange.programId, wallet.publicKey);
+            let [whitelistTradingFeesAddress, _whitelistTradingFeesNonce] = await utils.getUserWhitelistTradingFeesAccount(exchange_1.exchange.programId, owner);
             await exchange_1.exchange.program.account.whitelistTradingFeesAccount.fetch(whitelistTradingFeesAddress);
             console.log("User is whitelisted for trading fees.");
             client._whitelistTradingFeesAddress = whitelistTradingFeesAddress;
         }
         catch (e) { }
         await Promise.all(exchange_1.exchange.assets.map(async (asset) => {
-            const subClient = await subclient_1.SubClient.load(asset, client, connection, wallet, callback, throttle);
+            const subClient = await subclient_1.SubClient.load(asset, client, connection, owner, callback, throttle);
             client.addSubClient(asset, subClient);
             client._marginAccountToAsset.set(subClient.marginAccountAddress.toString(), asset);
         }));
@@ -152,6 +164,7 @@ class Client {
         // This is referring itself by another referrer.
     }
     async setReferralData() {
+        this.delegatedCheck();
         try {
             let [referrerAccount] = await utils.getReferrerAccountAddress(exchange_1.exchange.programId, this.publicKey);
             this._referrerAccount =
@@ -174,6 +187,7 @@ class Client {
         catch (e) { }
     }
     async referUser(referrer) {
+        this.delegatedCheck();
         let [referrerAccount] = await utils.getReferrerAccountAddress(exchange_1.exchange.programId, referrer);
         try {
             await exchange_1.exchange.program.account.referrerAccount.fetch(referrerAccount);
@@ -247,19 +261,23 @@ class Client {
     createCancelAllMarketOrdersInstruction(asset, market) {
         return this.getSubClient(asset).createCancelAllMarketOrdersInstruction(this.marketIdentifierToIndex(asset, market));
     }
+    async editDelegatedPubkey(asset, delegatedPubkey) {
+        return await this.getSubClient(asset).editDelegatedPubkey(delegatedPubkey);
+    }
     async migrateFunds(amount, withdrawAsset, depositAsset) {
+        this.delegatedCheck();
         await this.usdcAccountCheck();
         let tx = new web3_js_1.Transaction();
         let withdrawSubClient = this.getSubClient(withdrawAsset);
         let depositSubClient = this.getSubClient(depositAsset);
         // Create withdraw ix
-        tx.add(instructions.withdrawIx(withdrawAsset, amount, withdrawSubClient.marginAccountAddress, this.usdcAccountAddress, this.publicKey));
+        tx.add(instructions.withdrawIx(withdrawAsset, amount, withdrawSubClient.marginAccountAddress, this.usdcAccountAddress, this.provider.wallet.publicKey));
         // Create deposit tx
         if (depositSubClient.marginAccount === null) {
             console.log("User has no margin account. Creating margin account...");
-            tx.add(instructions.initializeMarginAccountIx(depositSubClient.subExchange.zetaGroupAddress, depositSubClient.marginAccountAddress, this.publicKey));
+            tx.add(instructions.initializeMarginAccountIx(depositSubClient.subExchange.zetaGroupAddress, depositSubClient.marginAccountAddress, this.provider.wallet.publicKey));
         }
-        tx.add(await instructions.depositIx(depositAsset, amount, depositSubClient.marginAccountAddress, this.usdcAccountAddress, this.publicKey, this.whitelistDepositAddress));
+        tx.add(await instructions.depositIx(depositAsset, amount, depositSubClient.marginAccountAddress, this.usdcAccountAddress, this.provider.wallet.publicKey, this.whitelistDepositAddress));
         return await utils.processTransaction(this._provider, tx);
     }
     async deposit(asset, amount) {
@@ -296,9 +314,11 @@ class Client {
             return await this.getSubClient(asset).cancelAllOrders();
         }
         else {
+            let txIds = [];
             for (var subClient of this.getAllSubClients()) {
-                await subClient.cancelAllOrders();
+                txIds.push(await subClient.cancelAllOrders());
             }
+            return txIds.flat();
         }
     }
     async cancelAllOrdersNoError(asset = undefined) {
@@ -335,7 +355,7 @@ class Client {
     async cancelAllMarketOrders(asset, market) {
         let tx = new web3_js_1.Transaction();
         let index = exchange_1.exchange.getZetaGroupMarkets(asset).getMarketIndex(this.marketIdentifierToPublicKey(asset, market));
-        let ix = instructions.cancelAllMarketOrdersIx(asset, index, this.publicKey, this.getSubClient(asset).marginAccountAddress, this.getSubClient(asset).openOrdersAccounts[index]);
+        let ix = instructions.cancelAllMarketOrdersIx(asset, index, this.provider.wallet.publicKey, this.getSubClient(asset).marginAccountAddress, this.getSubClient(asset).openOrdersAccounts[index]);
         tx.add(ix);
         return await utils.processTransaction(this.provider, tx);
     }
@@ -370,7 +390,7 @@ class Client {
         for (var i = 0; i < cancelArguments.length; i++) {
             let asset = cancelArguments[i].asset;
             let marketIndex = exchange_1.exchange.getZetaGroupMarkets(asset).getMarketIndex(cancelArguments[i].market);
-            let ix = instructions.cancelOrderIx(asset, marketIndex, this.publicKey, this.getSubClient(asset).marginAccountAddress, this.getSubClient(asset).openOrdersAccounts[marketIndex], cancelArguments[i].orderId, cancelArguments[i].cancelSide);
+            let ix = instructions.cancelOrderIx(asset, marketIndex, this.provider.wallet.publicKey, this.getSubClient(asset).marginAccountAddress, this.getSubClient(asset).openOrdersAccounts[marketIndex], cancelArguments[i].orderId, cancelArguments[i].cancelSide);
             ixs.push(ix);
         }
         let txs = utils.splitIxsIntoTx(ixs, constants.MAX_CANCELS_PER_TX);
@@ -385,7 +405,7 @@ class Client {
         for (var i = 0; i < cancelArguments.length; i++) {
             let asset = cancelArguments[i].asset;
             let marketIndex = exchange_1.exchange.getZetaGroupMarkets(asset).getMarketIndex(cancelArguments[i].market);
-            let ix = instructions.cancelOrderNoErrorIx(asset, marketIndex, this.publicKey, this.getSubClient(asset).marginAccountAddress, this.getSubClient(asset).openOrdersAccounts[marketIndex], cancelArguments[i].orderId, cancelArguments[i].cancelSide);
+            let ix = instructions.cancelOrderNoErrorIx(asset, marketIndex, this.provider.wallet.publicKey, this.getSubClient(asset).marginAccountAddress, this.getSubClient(asset).openOrdersAccounts[marketIndex], cancelArguments[i].orderId, cancelArguments[i].cancelSide);
             ixs.push(ix);
         }
         let txs = utils.splitIxsIntoTx(ixs, constants.MAX_CANCELS_PER_TX);
@@ -455,11 +475,20 @@ class Client {
     getMarginAccountAddress(asset) {
         return this.getSubClient(asset).marginAccountAddress;
     }
+    getMarginAccountAddresses() {
+        let addresses = [];
+        for (var asset of exchange_1.exchange.assets) {
+            addresses.push(this.getSubClient(asset).marginAccountAddress);
+        }
+        return addresses;
+    }
     async initializeReferrerAccount() {
+        this.delegatedCheck();
         let tx = new web3_js_1.Transaction().add(await instructions.initializeReferrerAccountIx(this.publicKey));
         await utils.processTransaction(this._provider, tx);
     }
     async initializeReferrerAlias(alias) {
+        this.delegatedCheck();
         if (alias.length > 15) {
             throw new Error("Alias cannot be over 15 chars!");
         }
@@ -481,13 +510,15 @@ class Client {
         return txid;
     }
     async claimReferrerRewards() {
+        this.delegatedCheck();
         let [referrerAccountAddress] = await utils.getReferrerAccountAddress(exchange_1.exchange.programId, this.publicKey);
-        let tx = new web3_js_1.Transaction().add(await instructions.claimReferralsRewardsIx(referrerAccountAddress, this._usdcAccountAddress, this.publicKey));
+        let tx = new web3_js_1.Transaction().add(await instructions.claimReferralsRewardsIx(referrerAccountAddress, this._usdcAccountAddress, this.provider.wallet.publicKey));
         return await utils.processTransaction(this._provider, tx);
     }
     async claimReferralRewards() {
+        this.delegatedCheck();
         let [referralAccountAddress] = await utils.getReferralAccountAddress(exchange_1.exchange.programId, this.publicKey);
-        let tx = new web3_js_1.Transaction().add(await instructions.claimReferralsRewardsIx(referralAccountAddress, this._usdcAccountAddress, this.publicKey));
+        let tx = new web3_js_1.Transaction().add(await instructions.claimReferralsRewardsIx(referralAccountAddress, this._usdcAccountAddress, this.provider.wallet.publicKey));
         return await utils.processTransaction(this._provider, tx);
     }
     getProductLedger(asset, marketIndex) {
@@ -508,6 +539,11 @@ class Client {
         if (this._orderCompleteEventListener !== undefined) {
             await exchange_1.exchange.program.removeEventListener(this._orderCompleteEventListener);
             this._orderCompleteEventListener = undefined;
+        }
+    }
+    delegatedCheck() {
+        if (this.delegatorKey) {
+            throw Error("Function not supported by delegated client. Please load without 'delegator' argument");
         }
     }
 }

@@ -7,6 +7,7 @@ export declare class Slab {
     private nodes;
     constructor(header: any, nodes: any);
     static decode(buffer: Buffer): any;
+    get leafCount(): number;
     get(searchKey: BN | number): any;
     [Symbol.iterator](): Generator<{
         ownerSlot: number;

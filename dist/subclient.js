@@ -150,10 +150,10 @@ class SubClient {
      *                    If set to false, margin account callbacks will also call
      *                    `updateState` instead of waiting for the poll.
      */
-    static async load(asset, parent, connection, wallet, callback = undefined, throttle = false) {
+    static async load(asset, parent, connection, user, callback = undefined, throttle = false) {
         let subClient = new SubClient(asset, parent);
-        let [marginAccountAddress, _marginAccountNonce] = await utils.getMarginAccount(exchange_1.exchange.programId, subClient._subExchange.zetaGroupAddress, wallet.publicKey);
-        let [spreadAccountAddress, _spreadAccountNonce] = await utils.getSpreadAccount(exchange_1.exchange.programId, subClient._subExchange.zetaGroupAddress, wallet.publicKey);
+        let [marginAccountAddress, _marginAccountNonce] = await utils.getMarginAccount(exchange_1.exchange.programId, subClient._subExchange.zetaGroupAddress, user);
+        let [spreadAccountAddress, _spreadAccountNonce] = await utils.getSpreadAccount(exchange_1.exchange.programId, subClient._subExchange.zetaGroupAddress, user);
         subClient._marginAccountAddress = marginAccountAddress;
         subClient._spreadAccountAddress = spreadAccountAddress;
         subClient._callback = callback;
@@ -283,13 +283,14 @@ class SubClient {
      * @param amount  the native amount to deposit (6 decimals fixed point)
      */
     async deposit(amount) {
+        this.delegatedCheck();
         // Check if the user has a USDC account.
         let tx = new web3_js_1.Transaction();
         if (this._marginAccount === null) {
             console.log("User has no margin account. Creating margin account...");
-            tx.add(instructions.initializeMarginAccountIx(this._subExchange.zetaGroupAddress, this._marginAccountAddress, this._parent.publicKey));
+            tx.add(instructions.initializeMarginAccountIx(this._subExchange.zetaGroupAddress, this._marginAccountAddress, this._parent.provider.wallet.publicKey));
         }
-        tx.add(await instructions.depositIx(this.asset, amount, this._marginAccountAddress, this._parent.usdcAccountAddress, this._parent.publicKey, this._parent.whitelistDepositAddress));
+        tx.add(await instructions.depositIx(this.asset, amount, this._marginAccountAddress, this._parent.usdcAccountAddress, this._parent.provider.wallet.publicKey, this._parent.whitelistDepositAddress));
         let txId = await utils.processTransaction(this._parent.provider, tx);
         return txId;
     }
@@ -297,10 +298,11 @@ class SubClient {
      * Closes a subClient's margin account
      */
     async closeMarginAccount() {
+        this.delegatedCheck();
         if (this._marginAccount === null) {
             throw Error("User has no margin account to close");
         }
-        let tx = new web3_js_1.Transaction().add(instructions.closeMarginAccountIx(this.asset, this._parent.publicKey, this._marginAccountAddress));
+        let tx = new web3_js_1.Transaction().add(instructions.closeMarginAccountIx(this.asset, this._parent.provider.wallet.publicKey, this._marginAccountAddress));
         let txId = await utils.processTransaction(this._parent.provider, tx);
         this._marginAccount = null;
         return txId;
@@ -309,13 +311,14 @@ class SubClient {
      * Closes a subClient's spread account
      */
     async closeSpreadAccount() {
+        this.delegatedCheck();
         if (this._spreadAccount === null) {
             throw Error("User has no spread account to close");
         }
         let subExchange = this._subExchange;
         let tx = new web3_js_1.Transaction();
-        tx.add(instructions.transferExcessSpreadBalanceIx(subExchange.zetaGroupAddress, this.marginAccountAddress, this._spreadAccountAddress, this._parent.publicKey));
-        tx.add(instructions.closeSpreadAccountIx(subExchange.zetaGroupAddress, this._spreadAccountAddress, this._parent.publicKey));
+        tx.add(instructions.transferExcessSpreadBalanceIx(subExchange.zetaGroupAddress, this.marginAccountAddress, this._spreadAccountAddress, this._parent.provider.wallet.publicKey));
+        tx.add(instructions.closeSpreadAccountIx(subExchange.zetaGroupAddress, this._spreadAccountAddress, this._parent.provider.wallet.publicKey));
         let txId = await utils.processTransaction(this._parent.provider, tx);
         this._spreadAccount = null;
         return txId;
@@ -324,20 +327,22 @@ class SubClient {
      * @param amount  the native amount to withdraw (6 dp)
      */
     async withdraw(amount) {
+        this.delegatedCheck();
         let tx = new web3_js_1.Transaction();
-        tx.add(instructions.withdrawIx(this.asset, amount, this._marginAccountAddress, this._parent.usdcAccountAddress, this._parent.publicKey));
+        tx.add(instructions.withdrawIx(this.asset, amount, this._marginAccountAddress, this._parent.usdcAccountAddress, this._parent.provider.wallet.publicKey));
         return await utils.processTransaction(this._parent.provider, tx);
     }
     /**
      * Withdraws the entirety of the subClient's margin account and then closes it.
      */
     async withdrawAndCloseMarginAccount() {
+        this.delegatedCheck();
         if (this._marginAccount === null) {
             throw Error("User has no margin account to withdraw or close.");
         }
         let tx = new web3_js_1.Transaction();
-        tx.add(instructions.withdrawIx(this.asset, this._marginAccount.balance.toNumber(), this._marginAccountAddress, this._parent.usdcAccountAddress, this._parent.publicKey));
-        tx.add(instructions.closeMarginAccountIx(this.asset, this._parent.publicKey, this._marginAccountAddress));
+        tx.add(instructions.withdrawIx(this.asset, this._marginAccount.balance.toNumber(), this._marginAccountAddress, this._parent.usdcAccountAddress, this._parent.provider.wallet.publicKey));
+        tx.add(instructions.closeMarginAccountIx(this.asset, this._parent.provider.wallet.publicKey, this._marginAccountAddress));
         return await utils.processTransaction(this._parent.provider, tx);
     }
     /**
@@ -350,13 +355,14 @@ class SubClient {
      * @param side            the side of the order. bid / ask
      */
     async placeOrderAndLockPosition(market, price, size, side, tag = constants.DEFAULT_ORDER_TAG) {
+        this.delegatedCheck();
         let tx = new web3_js_1.Transaction();
         let subExchange = this._subExchange;
         let marketIndex = subExchange.markets.getMarketIndex(market);
         let openOrdersPda = null;
         if (this._openOrdersAccounts[marketIndex].equals(web3_js_1.PublicKey.default)) {
             console.log(`User doesn't have open orders account. Initialising for market ${market.toString()}.`);
-            let [initIx, _openOrdersPda] = await instructions.initializeOpenOrdersIx(this.asset, market, this._parent.publicKey, this.marginAccountAddress);
+            let [initIx, _openOrdersPda] = await instructions.initializeOpenOrdersIx(this.asset, market, this._parent.publicKey, this._parent.provider.wallet.publicKey, this.marginAccountAddress);
             openOrdersPda = _openOrdersPda;
             tx.add(initIx);
         }
@@ -364,11 +370,11 @@ class SubClient {
             openOrdersPda = this._openOrdersAccounts[marketIndex];
         }
         let orderIx = instructions.placeOrderV4Ix(this.asset, marketIndex, price, size, side, types.OrderType.FILLORKILL, 0, // Default to none for now.
-        tag, 0, this.marginAccountAddress, this._parent.publicKey, openOrdersPda, this._parent.whitelistTradingFeesAddress);
+        tag, 0, this.marginAccountAddress, this._parent.provider.wallet.publicKey, openOrdersPda, this._parent.whitelistTradingFeesAddress);
         tx.add(orderIx);
         if (this.spreadAccount == null) {
             console.log("User has no spread account. Creating spread account...");
-            tx.add(instructions.initializeSpreadAccountIx(subExchange.zetaGroupAddress, this.spreadAccountAddress, this._parent.publicKey));
+            tx.add(instructions.initializeSpreadAccountIx(subExchange.zetaGroupAddress, this.spreadAccountAddress, this._parent.provider.wallet.publicKey));
         }
         let movementSize = side == types.Side.BID ? size : -size;
         let movements = [
@@ -377,7 +383,7 @@ class SubClient {
                 size: new anchor.BN(movementSize),
             },
         ];
-        tx.add(instructions.positionMovementIx(this._asset, subExchange.zetaGroupAddress, this.marginAccountAddress, this.spreadAccountAddress, this._parent.publicKey, subExchange.greeksAddress, subExchange.zetaGroup.oracle, types.MovementType.LOCK, movements));
+        tx.add(instructions.positionMovementIx(this._asset, subExchange.zetaGroupAddress, this.marginAccountAddress, this.spreadAccountAddress, this._parent.provider.wallet.publicKey, subExchange.greeksAddress, subExchange.zetaGroup.oracle, subExchange.zetaGroup.oracleBackupFeed, constants.CHAINLINK_PID, types.MovementType.LOCK, movements));
         let txId = await utils.processTransaction(this._parent.provider, tx);
         this._openOrdersAccounts[marketIndex] = openOrdersPda;
         return txId;
@@ -399,24 +405,23 @@ class SubClient {
      * from the user open orders account before cancelling the second order.
      * (Depending on the order in which the order was cancelled).
      */
-    async placeOrder(market, price, size, side, options) {
+    async placeOrder(market, price, size, side, options = types.defaultOrderOptions()) {
         let tx = new web3_js_1.Transaction();
         let marketIndex = this._subExchange.markets.getMarketIndex(market);
         let openOrdersPda = null;
         if (this._openOrdersAccounts[marketIndex].equals(web3_js_1.PublicKey.default)) {
             console.log(`[${(0, assets_1.assetToName)(this.asset)}] User doesn't have open orders account. Initialising for market ${market.toString()}.`);
-            let [initIx, _openOrdersPda] = await instructions.initializeOpenOrdersIx(this.asset, market, this._parent.publicKey, this.marginAccountAddress);
+            let [initIx, _openOrdersPda] = await instructions.initializeOpenOrdersIx(this.asset, market, this._parent.publicKey, this._parent.provider.wallet.publicKey, this.marginAccountAddress);
             openOrdersPda = _openOrdersPda;
             tx.add(initIx);
         }
         else {
             openOrdersPda = this._openOrdersAccounts[marketIndex];
         }
-        let marketInfo = exchange_1.exchange.getMarkets(this._asset)[marketIndex];
-        let tifOffsetToUse = utils.getTIFOffset(options.explicitTIF != undefined ? options.explicitTIF : true, options.tifOffset != undefined ? options.tifOffset : 0, marketInfo.serumMarket.epochStartTs.toNumber(), marketInfo.serumMarket.epochLength.toNumber());
+        let tifOffsetToUse = utils.getTIFOffset(this._subExchange.markets.getMarket(market), options.tifOptions);
         let orderIx = instructions.placeOrderV4Ix(this.asset, marketIndex, price, size, side, options.orderType != undefined
             ? options.orderType
-            : types.OrderType.LIMIT, options.clientOrderId != undefined ? options.clientOrderId : 0, options.tag != undefined ? options.tag : constants.DEFAULT_ORDER_TAG, tifOffsetToUse, this.marginAccountAddress, this._parent.publicKey, openOrdersPda, this._parent.whitelistTradingFeesAddress);
+            : types.OrderType.LIMIT, options.clientOrderId != undefined ? options.clientOrderId : 0, options.tag != undefined ? options.tag : constants.DEFAULT_ORDER_TAG, tifOffsetToUse, this.marginAccountAddress, this._parent.provider.wallet.publicKey, openOrdersPda, this._parent.whitelistTradingFeesAddress);
         tx.add(orderIx);
         let txId;
         txId = await utils.processTransaction(this._parent.provider, tx, undefined, undefined, undefined, options.blockhash);
@@ -437,55 +442,62 @@ class SubClient {
      * from the user open orders account before cancelling the second order.
      * (Depending on the order in which the order was cancelled).
      */
-    async placePerpOrder(price, size, side, options) {
+    async placePerpOrder(price, size, side, options = types.defaultOrderOptions()) {
         let tx = new web3_js_1.Transaction();
         let market = exchange_1.exchange.getPerpMarket(this._asset).address;
         let marketIndex = constants.PERP_INDEX;
         let openOrdersPda = null;
         if (this._openOrdersAccounts[marketIndex].equals(web3_js_1.PublicKey.default)) {
             console.log(`[${(0, assets_1.assetToName)(this.asset)}] User doesn't have open orders account. Initialising for market ${market.toString()}.`);
-            let [initIx, _openOrdersPda] = await instructions.initializeOpenOrdersIx(this.asset, market, this._parent.publicKey, this.marginAccountAddress);
+            let [initIx, _openOrdersPda] = await instructions.initializeOpenOrdersIx(this.asset, market, this._parent.publicKey, this._parent.provider.wallet.publicKey, this.marginAccountAddress);
             openOrdersPda = _openOrdersPda;
             tx.add(initIx);
         }
         else {
             openOrdersPda = this._openOrdersAccounts[marketIndex];
         }
-        let marketInfo = exchange_1.exchange.getPerpMarket(this._asset);
-        let tifOffsetToUse = utils.getTIFOffset(options.explicitTIF != undefined ? options.explicitTIF : true, options.tifOffset != undefined ? options.tifOffset : 0, marketInfo.serumMarket.epochStartTs.toNumber(), marketInfo.serumMarket.epochLength.toNumber());
+        let tifOffsetToUse = utils.getTIFOffset(this._subExchange.markets.getMarket(market), options.tifOptions);
         let orderIx = instructions.placePerpOrderV2Ix(this.asset, marketIndex, price, size, side, options.orderType != undefined
             ? options.orderType
-            : types.OrderType.LIMIT, options.clientOrderId != undefined ? options.clientOrderId : 0, options.tag != undefined ? options.tag : constants.DEFAULT_ORDER_TAG, tifOffsetToUse, this.marginAccountAddress, this._parent.publicKey, openOrdersPda, this._parent.whitelistTradingFeesAddress);
+            : types.OrderType.LIMIT, options.clientOrderId != undefined ? options.clientOrderId : 0, options.tag != undefined ? options.tag : constants.DEFAULT_ORDER_TAG, tifOffsetToUse, this.marginAccountAddress, this._parent.provider.wallet.publicKey, openOrdersPda, this._parent.whitelistTradingFeesAddress);
         tx.add(orderIx);
         let txId;
         txId = await utils.processTransaction(this._parent.provider, tx, undefined, undefined, undefined, options.blockhash);
         this._openOrdersAccounts[marketIndex] = openOrdersPda;
         return txId;
     }
+    async editDelegatedPubkey(delegatedPubkey) {
+        this.delegatedCheck();
+        let tx = new web3_js_1.Transaction();
+        tx.add(instructions.editDelegatedPubkeyIx(this._asset, delegatedPubkey, this.marginAccountAddress, this._parent.provider.wallet.publicKey));
+        let txId = await utils.processTransaction(this._parent.provider, tx);
+        return txId;
+    }
     createCancelOrderNoErrorInstruction(marketIndex, orderId, side) {
-        return instructions.cancelOrderNoErrorIx(this.asset, marketIndex, this._parent.publicKey, this._marginAccountAddress, this._openOrdersAccounts[marketIndex], orderId, side);
+        return instructions.cancelOrderNoErrorIx(this.asset, marketIndex, this._parent.provider.wallet.publicKey, this._marginAccountAddress, this._openOrdersAccounts[marketIndex], orderId, side);
     }
     createCancelAllMarketOrdersInstruction(marketIndex) {
-        return instructions.cancelAllMarketOrdersIx(this.asset, marketIndex, this._parent.publicKey, this._marginAccountAddress, this._openOrdersAccounts[marketIndex]);
+        return instructions.cancelAllMarketOrdersIx(this.asset, marketIndex, this._parent.provider.wallet.publicKey, this._marginAccountAddress, this._openOrdersAccounts[marketIndex]);
     }
-    createPlaceOrderInstruction(marketIndex, price, size, side, options) {
+    createPlaceOrderInstruction(marketIndex, price, size, side, options = types.defaultOrderOptions()) {
         if (marketIndex == constants.PERP_INDEX) {
             return this.createPlacePerpOrderInstruction(price, size, side, options);
         }
-        let marketInfo = exchange_1.exchange.getMarkets(this._asset)[marketIndex];
-        let tifOffsetToUse = utils.getTIFOffset(options.explicitTIF != undefined ? options.explicitTIF : true, options.tifOffset != undefined ? options.tifOffset : 0, marketInfo.serumMarket.epochStartTs.toNumber(), marketInfo.serumMarket.epochLength.toNumber());
+        let tifOffsetToUse = utils.getTIFOffset(exchange_1.exchange.getMarket(this._asset, marketIndex), options.tifOptions);
         return instructions.placeOrderV4Ix(this.asset, marketIndex, price, size, side, options.orderType != undefined
             ? options.orderType
-            : types.OrderType.LIMIT, options.clientOrderId != undefined ? options.clientOrderId : 0, options.tag != undefined ? options.tag : constants.DEFAULT_ORDER_TAG, tifOffsetToUse, this.marginAccountAddress, this._parent.publicKey, this._openOrdersAccounts[marketIndex], this._parent.whitelistTradingFeesAddress);
+            : types.OrderType.LIMIT, options.clientOrderId != undefined ? options.clientOrderId : 0, options.tag != undefined ? options.tag : constants.DEFAULT_ORDER_TAG, tifOffsetToUse, this.marginAccountAddress, this._parent.provider.wallet.publicKey, this._openOrdersAccounts[marketIndex], this._parent.whitelistTradingFeesAddress);
     }
-    createPlacePerpOrderInstruction(price, size, side, options) {
+    createPlacePerpOrderInstruction(price, size, side, options = types.defaultOrderOptions()) {
         if (this._openOrdersAccounts[constants.PERP_INDEX].equals(web3_js_1.PublicKey.default)) {
             console.log(`No open orders account for ${(0, assets_1.assetToName)(this.asset)}-PERP. Please call client.placeOrder() or client.initializeOpenOrdersAccount()`);
             throw Error("User does not have an open orders account.");
         }
+        let market = exchange_1.exchange.getPerpMarket(this._asset).address;
+        let tifOffset = utils.getTIFOffset(this._subExchange.markets.getMarket(market), options.tifOptions);
         return instructions.placePerpOrderV2Ix(this.asset, constants.PERP_INDEX, price, size, side, options.orderType != undefined
             ? options.orderType
-            : types.OrderType.LIMIT, options.clientOrderId != undefined ? options.clientOrderId : 0, options.tag != undefined ? options.tag : constants.DEFAULT_ORDER_TAG, options.tifOffset != undefined ? options.tifOffset : 0, this.marginAccountAddress, this._parent.publicKey, this._openOrdersAccounts[constants.PERP_INDEX], this._parent.whitelistTradingFeesAddress);
+            : types.OrderType.LIMIT, options.clientOrderId != undefined ? options.clientOrderId : 0, options.tag != undefined ? options.tag : constants.DEFAULT_ORDER_TAG, tifOffset, this.marginAccountAddress, this._parent.provider.wallet.publicKey, this._openOrdersAccounts[constants.PERP_INDEX], this._parent.whitelistTradingFeesAddress);
     }
     /**
      * Cancels a user order by orderId
@@ -496,7 +508,7 @@ class SubClient {
     async cancelOrder(market, orderId, side) {
         let tx = new web3_js_1.Transaction();
         let index = this._subExchange.markets.getMarketIndex(market);
-        let ix = instructions.cancelOrderIx(this.asset, index, this._parent.publicKey, this._marginAccountAddress, this._openOrdersAccounts[index], orderId, side);
+        let ix = instructions.cancelOrderIx(this.asset, index, this._parent.provider.wallet.publicKey, this._marginAccountAddress, this._openOrdersAccounts[index], orderId, side);
         tx.add(ix);
         return await utils.processTransaction(this._parent.provider, tx);
     }
@@ -512,7 +524,7 @@ class SubClient {
         }
         let tx = new web3_js_1.Transaction();
         let index = this._subExchange.markets.getMarketIndex(market);
-        let ix = instructions.cancelOrderByClientOrderIdIx(this.asset, index, this._parent.publicKey, this._marginAccountAddress, this._openOrdersAccounts[index], new anchor.BN(clientOrderId));
+        let ix = instructions.cancelOrderByClientOrderIdIx(this.asset, index, this._parent.provider.wallet.publicKey, this._marginAccountAddress, this._openOrdersAccounts[index], new anchor.BN(clientOrderId));
         tx.add(ix);
         return await utils.processTransaction(this._parent.provider, tx);
     }
@@ -528,15 +540,21 @@ class SubClient {
      * @param clientOrderId   optional: subClient order id (non 0 value)
      * @param newOrderTag     optional: the string tag corresponding to who is inserting. Default "SDK", max 4 length
      */
-    async cancelAndPlaceOrder(market, orderId, cancelSide, newOrderPrice, newOrderSize, newOrderSide, options) {
+    async cancelAndPlaceOrder(market, orderId, cancelSide, newOrderPrice, newOrderSize, newOrderSide, options = types.defaultOrderOptions()) {
         let tx = new web3_js_1.Transaction();
         let marketIndex = this._subExchange.markets.getMarketIndex(market);
-        tx.add(instructions.cancelOrderIx(this.asset, marketIndex, this._parent.publicKey, this._marginAccountAddress, this._openOrdersAccounts[marketIndex], orderId, cancelSide));
-        let marketInfo = exchange_1.exchange.getMarkets(this._asset)[marketIndex];
-        let tifOffsetToUse = utils.getTIFOffset(options.explicitTIF != undefined ? options.explicitTIF : true, options.tifOffset != undefined ? options.tifOffset : 0, marketInfo.serumMarket.epochStartTs.toNumber(), marketInfo.serumMarket.epochLength.toNumber());
-        tx.add(instructions.placeOrderV4Ix(this.asset, marketIndex, newOrderPrice, newOrderSize, newOrderSide, options.orderType != undefined
-            ? options.orderType
-            : types.OrderType.LIMIT, options.clientOrderId != undefined ? options.clientOrderId : 0, options.tag != undefined ? options.tag : constants.DEFAULT_ORDER_TAG, tifOffsetToUse, this.marginAccountAddress, this._parent.publicKey, this._openOrdersAccounts[marketIndex], this._parent.whitelistTradingFeesAddress));
+        tx.add(instructions.cancelOrderIx(this.asset, marketIndex, this._parent.provider.wallet.publicKey, this._marginAccountAddress, this._openOrdersAccounts[marketIndex], orderId, cancelSide));
+        let tifOffsetToUse = utils.getTIFOffset(this._subExchange.markets.getMarket(market), options.tifOptions);
+        if (marketIndex == constants.PERP_INDEX) {
+            tx.add(instructions.placePerpOrderV2Ix(this.asset, marketIndex, newOrderPrice, newOrderSize, newOrderSide, options.orderType != undefined
+                ? options.orderType
+                : types.OrderType.LIMIT, options.clientOrderId != undefined ? options.clientOrderId : 0, options.tag != undefined ? options.tag : constants.DEFAULT_ORDER_TAG, tifOffsetToUse, this.marginAccountAddress, this._parent.provider.wallet.publicKey, this._openOrdersAccounts[marketIndex], this._parent.whitelistTradingFeesAddress));
+        }
+        else {
+            tx.add(instructions.placeOrderV4Ix(this.asset, marketIndex, newOrderPrice, newOrderSize, newOrderSide, options.orderType != undefined
+                ? options.orderType
+                : types.OrderType.LIMIT, options.clientOrderId != undefined ? options.clientOrderId : 0, options.tag != undefined ? options.tag : constants.DEFAULT_ORDER_TAG, tifOffsetToUse, this.marginAccountAddress, this._parent.provider.wallet.publicKey, this._openOrdersAccounts[marketIndex], this._parent.whitelistTradingFeesAddress));
+        }
         return await utils.processTransaction(this._parent.provider, tx);
     }
     /**
@@ -550,17 +568,25 @@ class SubClient {
      * @param newOrderClientOrderId   the subClient order id for the new order
      * @param newOrderTag     optional: the string tag corresponding to who is inserting. Default "SDK", max 4 length
      */
-    async cancelAndPlaceOrderByClientOrderId(market, cancelClientOrderId, newOrderPrice, newOrderSize, newOrderSide, newOptions) {
+    async cancelAndPlaceOrderByClientOrderId(market, cancelClientOrderId, newOrderPrice, newOrderSize, newOrderSide, newOptions = types.defaultOrderOptions()) {
         let tx = new web3_js_1.Transaction();
         let marketIndex = this._subExchange.markets.getMarketIndex(market);
-        tx.add(instructions.cancelOrderByClientOrderIdIx(this.asset, marketIndex, this._parent.publicKey, this._marginAccountAddress, this._openOrdersAccounts[marketIndex], new anchor.BN(cancelClientOrderId)));
-        let marketInfo = exchange_1.exchange.getMarkets(this._asset)[marketIndex];
-        let tifOffsetToUse = utils.getTIFOffset(newOptions.explicitTIF != undefined ? newOptions.explicitTIF : true, newOptions.tifOffset != undefined ? newOptions.tifOffset : 0, marketInfo.serumMarket.epochStartTs.toNumber(), marketInfo.serumMarket.epochLength.toNumber());
-        tx.add(instructions.placeOrderV4Ix(this.asset, marketIndex, newOrderPrice, newOrderSize, newOrderSide, newOptions.orderType != undefined
-            ? newOptions.orderType
-            : types.OrderType.LIMIT, newOptions.clientOrderId != undefined ? newOptions.clientOrderId : 0, newOptions.tag != undefined
-            ? newOptions.tag
-            : constants.DEFAULT_ORDER_TAG, tifOffsetToUse, this.marginAccountAddress, this._parent.publicKey, this._openOrdersAccounts[marketIndex], this._parent.whitelistTradingFeesAddress));
+        tx.add(instructions.cancelOrderByClientOrderIdIx(this.asset, marketIndex, this._parent.provider.wallet.publicKey, this._marginAccountAddress, this._openOrdersAccounts[marketIndex], new anchor.BN(cancelClientOrderId)));
+        let tifOffsetToUse = utils.getTIFOffset(this._subExchange.markets.getMarket(market), newOptions.tifOptions);
+        if (marketIndex == constants.PERP_INDEX) {
+            tx.add(instructions.placePerpOrderV2Ix(this.asset, marketIndex, newOrderPrice, newOrderSize, newOrderSide, newOptions.orderType != undefined
+                ? newOptions.orderType
+                : types.OrderType.LIMIT, newOptions.clientOrderId != undefined ? newOptions.clientOrderId : 0, newOptions.tag != undefined
+                ? newOptions.tag
+                : constants.DEFAULT_ORDER_TAG, tifOffsetToUse, this.marginAccountAddress, this._parent.provider.wallet.publicKey, this._openOrdersAccounts[marketIndex], this._parent.whitelistTradingFeesAddress));
+        }
+        else {
+            tx.add(instructions.placeOrderV4Ix(this.asset, marketIndex, newOrderPrice, newOrderSize, newOrderSide, newOptions.orderType != undefined
+                ? newOptions.orderType
+                : types.OrderType.LIMIT, newOptions.clientOrderId != undefined ? newOptions.clientOrderId : 0, newOptions.tag != undefined
+                ? newOptions.tag
+                : constants.DEFAULT_ORDER_TAG, tifOffsetToUse, this.marginAccountAddress, this._parent.provider.wallet.publicKey, this._openOrdersAccounts[marketIndex], this._parent.whitelistTradingFeesAddress));
+        }
         return await utils.processTransaction(this._parent.provider, tx);
     }
     /**
@@ -575,17 +601,25 @@ class SubClient {
      * @param newOrderClientOrderId   the client order id for the new order
      * @param newOrderTag     optional: the string tag corresponding to who is inserting. Default "SDK", max 4 length
      */
-    async replaceByClientOrderId(market, cancelClientOrderId, newOrderPrice, newOrderSize, newOrderSide, newOptions) {
+    async replaceByClientOrderId(market, cancelClientOrderId, newOrderPrice, newOrderSize, newOrderSide, newOptions = types.defaultOrderOptions()) {
         let tx = new web3_js_1.Transaction();
         let marketIndex = this._subExchange.markets.getMarketIndex(market);
-        tx.add(instructions.cancelOrderByClientOrderIdNoErrorIx(this.asset, marketIndex, this._parent.publicKey, this._marginAccountAddress, this._openOrdersAccounts[marketIndex], new anchor.BN(cancelClientOrderId)));
-        let marketInfo = exchange_1.exchange.getMarkets(this._asset)[marketIndex];
-        let tifOffsetToUse = utils.getTIFOffset(newOptions.explicitTIF != undefined ? newOptions.explicitTIF : true, newOptions.tifOffset != undefined ? newOptions.tifOffset : 0, marketInfo.serumMarket.epochStartTs.toNumber(), marketInfo.serumMarket.epochLength.toNumber());
-        tx.add(instructions.placeOrderV4Ix(this.asset, marketIndex, newOrderPrice, newOrderSize, newOrderSide, newOptions.orderType != undefined
-            ? newOptions.orderType
-            : types.OrderType.LIMIT, newOptions.clientOrderId != undefined ? newOptions.clientOrderId : 0, newOptions.tag != undefined
-            ? newOptions.tag
-            : constants.DEFAULT_ORDER_TAG, tifOffsetToUse, this.marginAccountAddress, this._parent.publicKey, this._openOrdersAccounts[marketIndex], this._parent.whitelistTradingFeesAddress));
+        tx.add(instructions.cancelOrderByClientOrderIdNoErrorIx(this.asset, marketIndex, this._parent.provider.wallet.publicKey, this._marginAccountAddress, this._openOrdersAccounts[marketIndex], new anchor.BN(cancelClientOrderId)));
+        let tifOffsetToUse = utils.getTIFOffset(this._subExchange.markets.getMarket(market), newOptions.tifOptions);
+        if (marketIndex == constants.PERP_INDEX) {
+            tx.add(instructions.placePerpOrderV2Ix(this.asset, marketIndex, newOrderPrice, newOrderSize, newOrderSide, newOptions.orderType != undefined
+                ? newOptions.orderType
+                : types.OrderType.LIMIT, newOptions.clientOrderId != undefined ? newOptions.clientOrderId : 0, newOptions.tag != undefined
+                ? newOptions.tag
+                : constants.DEFAULT_ORDER_TAG, tifOffsetToUse, this.marginAccountAddress, this._parent.provider.wallet.publicKey, this._openOrdersAccounts[marketIndex], this._parent.whitelistTradingFeesAddress));
+        }
+        else {
+            tx.add(instructions.placeOrderV4Ix(this.asset, marketIndex, newOrderPrice, newOrderSize, newOrderSide, newOptions.orderType != undefined
+                ? newOptions.orderType
+                : types.OrderType.LIMIT, newOptions.clientOrderId != undefined ? newOptions.clientOrderId : 0, newOptions.tag != undefined
+                ? newOptions.tag
+                : constants.DEFAULT_ORDER_TAG, tifOffsetToUse, this.marginAccountAddress, this._parent.provider.wallet.publicKey, this._openOrdersAccounts[marketIndex], this._parent.whitelistTradingFeesAddress));
+        }
         return await utils.processTransaction(this._parent.provider, tx);
     }
     /**
@@ -597,7 +631,7 @@ class SubClient {
         if (!this._openOrdersAccounts[marketIndex].equals(web3_js_1.PublicKey.default)) {
             throw Error("User already has an open orders account for market!");
         }
-        let [initIx, openOrdersPda] = await instructions.initializeOpenOrdersIx(this.asset, market, this._parent.publicKey, this.marginAccountAddress);
+        let [initIx, openOrdersPda] = await instructions.initializeOpenOrdersIx(this.asset, market, this._parent.publicKey, this._parent.provider.wallet.publicKey, this.marginAccountAddress);
         let tx = new web3_js_1.Transaction().add(initIx);
         let txId = await utils.processTransaction(this._parent.provider, tx);
         this._openOrdersAccounts[marketIndex] = openOrdersPda;
@@ -607,6 +641,7 @@ class SubClient {
      * Closes a user open orders account for a given market.
      */
     async closeOpenOrdersAccount(market) {
+        this.delegatedCheck();
         let marketIndex = this._subExchange.markets.getMarketIndex(market);
         if (this._openOrdersAccounts[marketIndex].equals(web3_js_1.PublicKey.default)) {
             throw Error("User has no open orders account for this market!");
@@ -614,7 +649,7 @@ class SubClient {
         const [vaultOwner, _vaultSignerNonce] = await utils.getSerumVaultOwnerAndNonce(market, constants.DEX_PID[exchange_1.exchange.network]);
         let tx = new web3_js_1.Transaction();
         tx.add(instructions.settleDexFundsIx(this.asset, market, vaultOwner, this._openOrdersAccounts[marketIndex]));
-        tx.add(await instructions.closeOpenOrdersIx(this.asset, market, this._parent.publicKey, this.marginAccountAddress, this._openOrdersAccounts[marketIndex]));
+        tx.add(await instructions.closeOpenOrdersIx(this.asset, market, this._parent.provider.wallet.publicKey, this.marginAccountAddress, this._openOrdersAccounts[marketIndex]));
         let txId = await utils.processTransaction(this._parent.provider, tx);
         this._openOrdersAccounts[marketIndex] = web3_js_1.PublicKey.default;
         return txId;
@@ -624,6 +659,7 @@ class SubClient {
      * Cannot pass in multiple of the same market address
      */
     async closeMultipleOpenOrdersAccount(markets) {
+        this.delegatedCheck();
         let combinedIxs = [];
         let subExchange = this._subExchange;
         for (var i = 0; i < markets.length; i++) {
@@ -634,7 +670,7 @@ class SubClient {
             }
             const [vaultOwner, _vaultSignerNonce] = await utils.getSerumVaultOwnerAndNonce(market, constants.DEX_PID[exchange_1.exchange.network]);
             let settleIx = instructions.settleDexFundsIx(this.asset, market, vaultOwner, this._openOrdersAccounts[marketIndex]);
-            let closeIx = await instructions.closeOpenOrdersIx(this.asset, market, this._parent.publicKey, this.marginAccountAddress, this._openOrdersAccounts[marketIndex]);
+            let closeIx = await instructions.closeOpenOrdersIx(this.asset, market, this._parent.provider.wallet.publicKey, this.marginAccountAddress, this._openOrdersAccounts[marketIndex]);
             combinedIxs.push(settleIx);
             combinedIxs.push(closeIx);
         }
@@ -659,6 +695,7 @@ class SubClient {
      * @param marginAccountToCancel Users to be force-cancelled's margin account
      */
     async forceCancelOrderByOrderId(market, marginAccountToCancel, orderId, side) {
+        this.delegatedCheck();
         let marginAccount = (await exchange_1.exchange.program.account.marginAccount.fetch(marginAccountToCancel));
         let marketIndex = this._subExchange.markets.getMarketIndex(market);
         let openOrdersAccountToCancel = await utils.createOpenOrdersAddress(exchange_1.exchange.programId, market, marginAccount.authority, marginAccount.openOrdersNonce[marketIndex]);
@@ -673,6 +710,7 @@ class SubClient {
      * @param marginAccountToCancel Users to be force-cancelled's margin account
      */
     async forceCancelOrders(market, marginAccountToCancel) {
+        this.delegatedCheck();
         let marginAccount = (await exchange_1.exchange.program.account.marginAccount.fetch(marginAccountToCancel));
         let marketIndex = this._subExchange.markets.getMarketIndex(market);
         let openOrdersAccountToCancel = await utils.createOpenOrdersAddress(exchange_1.exchange.programId, market, marginAccount.authority, marginAccount.openOrdersNonce[marketIndex]);
@@ -688,8 +726,9 @@ class SubClient {
      * @param size                        the quantity of the order (3 d.p)
      */
     async liquidate(market, liquidatedMarginAccount, size) {
+        this.delegatedCheck();
         let tx = new web3_js_1.Transaction();
-        let ix = instructions.liquidateIx(this.asset, this._parent.publicKey, this._marginAccountAddress, market, liquidatedMarginAccount, size);
+        let ix = instructions.liquidateIx(this.asset, this._parent.provider.wallet.publicKey, this._marginAccountAddress, market, liquidatedMarginAccount, size);
         tx.add(ix);
         return await utils.processTransaction(this._parent.provider, tx);
     }
@@ -701,7 +740,7 @@ class SubClient {
         let ixs = [];
         for (var i = 0; i < this._orders.length; i++) {
             let order = this._orders[i];
-            let ix = instructions.cancelOrderIx(this.asset, order.marketIndex, this._parent.publicKey, this._marginAccountAddress, this._openOrdersAccounts[order.marketIndex], order.orderId, order.side);
+            let ix = instructions.cancelOrderIx(this.asset, order.marketIndex, this._parent.provider.wallet.publicKey, this._marginAccountAddress, this._openOrdersAccounts[order.marketIndex], order.orderId, order.side);
             ixs.push(ix);
         }
         return ixs;
@@ -714,7 +753,7 @@ class SubClient {
         let ixs = [];
         for (var i = 0; i < this._orders.length; i++) {
             let order = this._orders[i];
-            let ix = instructions.cancelOrderNoErrorIx(this.asset, order.marketIndex, this._parent.publicKey, this._marginAccountAddress, this._openOrdersAccounts[order.marketIndex], order.orderId, order.side);
+            let ix = instructions.cancelOrderNoErrorIx(this.asset, order.marketIndex, this._parent.provider.wallet.publicKey, this._marginAccountAddress, this._openOrdersAccounts[order.marketIndex], order.orderId, order.side);
             ixs.push(ix);
         }
         return ixs;
@@ -753,6 +792,7 @@ class SubClient {
      * @param movements       - vector of position movements
      */
     async positionMovement(movementType, movements) {
+        this.delegatedCheck();
         let tx = this.getPositionMovementTx(movementType, movements);
         return await utils.processTransaction(this._parent.provider, tx);
     }
@@ -762,6 +802,7 @@ class SubClient {
      * @param movements       - vector of position movements
      */
     async simulatePositionMovement(movementType, movements) {
+        this.delegatedCheck();
         let tx = this.getPositionMovementTx(movementType, movements);
         let response = await utils.simulateTransaction(this._parent.provider, tx);
         let events = response.events;
@@ -778,6 +819,7 @@ class SubClient {
         return positionMovementEvent;
     }
     getPositionMovementTx(movementType, movements) {
+        this.delegatedCheck();
         if (movements.length > constants.MAX_POSITION_MOVEMENTS) {
             throw new Error(`Max position movements exceeded. Max = ${constants.MAX_POSITION_MOVEMENTS} < ${movements.length}`);
         }
@@ -786,16 +828,17 @@ class SubClient {
         let subExchange = this._subExchange;
         if (this.spreadAccount == null) {
             console.log("User has no spread account. Creating spread account...");
-            tx.add(instructions.initializeSpreadAccountIx(subExchange.zetaGroupAddress, this.spreadAccountAddress, this._parent.publicKey));
+            tx.add(instructions.initializeSpreadAccountIx(subExchange.zetaGroupAddress, this.spreadAccountAddress, this._parent.provider.wallet.publicKey));
         }
-        tx.add(instructions.positionMovementIx(this._asset, subExchange.zetaGroupAddress, this.marginAccountAddress, this.spreadAccountAddress, this._parent.publicKey, subExchange.greeksAddress, subExchange.zetaGroup.oracle, movementType, movements));
+        tx.add(instructions.positionMovementIx(this._asset, subExchange.zetaGroupAddress, this.marginAccountAddress, this.spreadAccountAddress, this._parent.provider.wallet.publicKey, subExchange.greeksAddress, subExchange.zetaGroup.oracle, subExchange.zetaGroup.oracleBackupFeed, constants.CHAINLINK_PID, movementType, movements));
         return tx;
     }
     /**
      * Transfers any non required balance in the spread account to margin account.
      */
     async transferExcessSpreadBalance() {
-        let tx = new web3_js_1.Transaction().add(instructions.transferExcessSpreadBalanceIx(this._subExchange.zetaGroupAddress, this.marginAccountAddress, this.spreadAccountAddress, this._parent.publicKey));
+        this.delegatedCheck();
+        let tx = new web3_js_1.Transaction().add(instructions.transferExcessSpreadBalanceIx(this._subExchange.zetaGroupAddress, this.marginAccountAddress, this.spreadAccountAddress, this._parent.provider.wallet.publicKey));
         return await utils.processTransaction(this._parent.provider, tx);
     }
     getRelevantMarketIndexes() {
@@ -824,7 +867,13 @@ class SubClient {
             await market.updateOrderbook();
             orders.push(market.getOrdersForAccount(this._openOrdersAccounts[i]));
         }));
-        this._orders = [].concat(...orders);
+        let allOrders = [].concat(...orders);
+        const asset = this._asset;
+        this._orders = allOrders.filter(function (order) {
+            let seqNum = utils.getSeqNumFromSerumOrderKey(order.orderId, order.side == types.Side.BID);
+            let serumMarket = exchange_1.exchange.getMarket(asset, order.marketIndex).serumMarket;
+            return !utils.isOrderExpired(order.tifOffset, seqNum, serumMarket.epochStartTs.toNumber(), serumMarket.startEpochSeqNum);
+        });
     }
     updateMarginPositions() {
         let positions = [];
@@ -971,6 +1020,11 @@ class SubClient {
         if (this._spreadAccountSubscriptionId !== undefined) {
             await this._parent.provider.connection.removeAccountChangeListener(this._spreadAccountSubscriptionId);
             this._spreadAccountSubscriptionId = undefined;
+        }
+    }
+    delegatedCheck() {
+        if (this._parent.delegatorKey) {
+            throw Error("Function not supported by delegated client. Please load without 'delegator' argument");
         }
     }
 }

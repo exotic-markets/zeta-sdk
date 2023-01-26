@@ -50,6 +50,10 @@ class Slab {
     static decode(buffer) {
         return exports.SLAB_LAYOUT.decode(buffer);
     }
+    // For test only.
+    get leafCount() {
+        return this.header.leafCount;
+    }
     get(searchKey) {
         if (this.header.leafCount === 0) {
             return null;

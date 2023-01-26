@@ -21,7 +21,7 @@ export declare function withdrawInsuranceVaultIx(asset: Asset, percentageAmount:
  * @param amount the native amount to withdraw (6dp)
  */
 export declare function withdrawIx(asset: Asset, amount: number, marginAccount: PublicKey, usdcAccount: PublicKey, userKey: PublicKey): TransactionInstruction;
-export declare function initializeOpenOrdersIx(asset: Asset, market: PublicKey, userKey: PublicKey, marginAccount: PublicKey): Promise<[TransactionInstruction, PublicKey]>;
+export declare function initializeOpenOrdersIx(asset: Asset, market: PublicKey, userKey: PublicKey, authority: PublicKey, marginAccount: PublicKey): Promise<[TransactionInstruction, PublicKey]>;
 export declare function closeOpenOrdersIx(asset: Asset, market: PublicKey, userKey: PublicKey, marginAccount: PublicKey, openOrders: PublicKey): Promise<TransactionInstruction>;
 export declare function placeOrderV3Ix(asset: Asset, marketIndex: number, price: number, size: number, side: types.Side, orderType: types.OrderType, clientOrderId: number, tag: String, marginAccount: PublicKey, authority: PublicKey, openOrders: PublicKey, whitelistTradingFeesAccount: PublicKey | undefined): TransactionInstruction;
 export declare function placeOrderV4Ix(asset: Asset, marketIndex: number, price: number, size: number, side: types.Side, orderType: types.OrderType, clientOrderId: number, tag: String, tifOffset: number, marginAccount: PublicKey, authority: PublicKey, openOrders: PublicKey, whitelistTradingFeesAccount: PublicKey | undefined): TransactionInstruction;
@@ -29,6 +29,7 @@ export declare function placePerpOrderIx(asset: Asset, marketIndex: number, pric
 export declare function placePerpOrderV2Ix(asset: Asset, marketIndex: number, price: number, size: number, side: types.Side, orderType: types.OrderType, clientOrderId: number, tag: String, tifOffset: number, marginAccount: PublicKey, authority: PublicKey, openOrders: PublicKey, whitelistTradingFeesAccount: PublicKey | undefined): TransactionInstruction;
 export declare function cancelOrderIx(asset: Asset, marketIndex: number, userKey: PublicKey, marginAccount: PublicKey, openOrders: PublicKey, orderId: anchor.BN, side: types.Side): TransactionInstruction;
 export declare function cancelOrderNoErrorIx(asset: Asset, marketIndex: number, userKey: PublicKey, marginAccount: PublicKey, openOrders: PublicKey, orderId: anchor.BN, side: types.Side): TransactionInstruction;
+export declare function pruneExpiredTIFOrdersIx(asset: Asset, marketIndex: number): TransactionInstruction;
 export declare function cancelAllMarketOrdersIx(asset: Asset, marketIndex: number, userKey: PublicKey, marginAccount: PublicKey, openOrders: PublicKey): TransactionInstruction;
 export declare function cancelOrderByClientOrderIdIx(asset: Asset, marketIndex: number, userKey: PublicKey, marginAccount: PublicKey, openOrders: PublicKey, clientOrderId: anchor.BN): TransactionInstruction;
 export declare function cancelOrderByClientOrderIdNoErrorIx(asset: Asset, marketIndex: number, userKey: PublicKey, marginAccount: PublicKey, openOrders: PublicKey, clientOrderId: anchor.BN): TransactionInstruction;
@@ -38,7 +39,7 @@ export declare function forceCancelOrdersIx(asset: Asset, marketIndex: number, m
 export declare function initializeZetaMarketTIFEpochCyclesIx(asset: Asset, marketIndex: number, cycleLength: number): TransactionInstruction;
 export declare function initializeZetaMarketTxs(asset: Asset, marketIndex: number, seedIndex: number, requestQueue: PublicKey, eventQueue: PublicKey, bids: PublicKey, asks: PublicKey, marketIndexes: PublicKey): Promise<[Transaction, Transaction]>;
 export declare function initializePerpSyncQueueIx(asset: Asset): Promise<TransactionInstruction>;
-export declare function initializeZetaGroupIx(asset: Asset, underlyingMint: PublicKey, oracle: PublicKey, pricingArgs: InitializeZetaGroupPricingArgs, perpArgs: UpdatePerpParametersArgs, marginArgs: UpdateMarginParametersArgs, expiryArgs: UpdateZetaGroupExpiryArgs): Promise<TransactionInstruction>;
+export declare function initializeZetaGroupIx(asset: Asset, underlyingMint: PublicKey, oracle: PublicKey, oracleBackupFeed: PublicKey, oracleBackupProgram: PublicKey, pricingArgs: InitializeZetaGroupPricingArgs, perpArgs: UpdatePerpParametersArgs, marginArgs: UpdateMarginParametersArgs, expiryArgs: UpdateZetaGroupExpiryArgs): Promise<TransactionInstruction>;
 export declare function collectTreasuryFundsIx(collectionTokenAccount: PublicKey, amount: anchor.BN, admin: PublicKey): TransactionInstruction;
 export declare function treasuryMovementIx(asset: Asset, treasuryMovementType: types.TreasuryMovementType, amount: anchor.BN): TransactionInstruction;
 export declare function rebalanceInsuranceVaultIx(asset: Asset, remainingAccounts: any[]): TransactionInstruction;
@@ -90,13 +91,14 @@ export declare function updateReferralsAdminIx(admin: PublicKey, newReferralsAdm
 export declare function expireSeriesOverrideIx(asset: Asset, admin: PublicKey, settlementAccount: PublicKey, args: ExpireSeriesOverrideArgs): TransactionInstruction;
 export declare function initializeSpreadAccountIx(zetaGroup: PublicKey, spreadAccount: PublicKey, user: PublicKey): TransactionInstruction;
 export declare function closeSpreadAccountIx(zetaGroup: PublicKey, spreadAccount: PublicKey, user: PublicKey): TransactionInstruction;
-export declare function positionMovementIx(asset: Asset, zetaGroup: PublicKey, marginAccount: PublicKey, spreadAccount: PublicKey, user: PublicKey, greeks: PublicKey, oracle: PublicKey, movementType: types.MovementType, movements: PositionMovementArg[]): TransactionInstruction;
+export declare function positionMovementIx(asset: Asset, zetaGroup: PublicKey, marginAccount: PublicKey, spreadAccount: PublicKey, user: PublicKey, greeks: PublicKey, oracle: PublicKey, oracleBackupFeed: PublicKey, oracleBackupProgram: PublicKey, movementType: types.MovementType, movements: PositionMovementArg[]): TransactionInstruction;
 export declare function transferExcessSpreadBalanceIx(zetaGroup: PublicKey, marginAccount: PublicKey, spreadAccount: PublicKey, user: PublicKey): TransactionInstruction;
 export declare function settleDexFundsTxs(asset: Asset, marketKey: PublicKey, vaultOwner: PublicKey, remainingAccounts: any[]): Transaction[];
 export declare function settleDexFundsIx(asset: Asset, marketKey: PublicKey, vaultOwner: PublicKey, openOrders: PublicKey): TransactionInstruction;
 export declare function burnVaultTokenTx(asset: Asset, marketKey: PublicKey): Transaction;
 export declare function overrideExpiryIx(zetaGroup: PublicKey, args: OverrideExpiryArgs): TransactionInstruction;
 export declare function toggleMarketMakerIx(isMarketMaker: boolean, zetaGroup: PublicKey, user: PublicKey): Promise<TransactionInstruction>;
+export declare function editDelegatedPubkeyIx(asset: Asset, delegatedPubkey: PublicKey, marginAccount: PublicKey, authority: PublicKey): TransactionInstruction;
 export interface ExpireSeriesOverrideArgs {
     settlementNonce: number;
     settlementPrice: anchor.BN;

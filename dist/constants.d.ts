@@ -9,6 +9,7 @@ export declare const DEX_PID: {
     devnet: PublicKey;
     mainnet: PublicKey;
 };
+export declare const CHAINLINK_PID: PublicKey;
 export declare const MAX_SETTLE_AND_CLOSE_PER_TX = 4;
 export declare const MAX_CANCELS_PER_TX = 3;
 export declare const MAX_GREEK_UPDATES_PER_TX = 20;
@@ -81,3 +82,4 @@ export declare const BPS_DENOMINATOR = 10000;
 export declare const BID_ORDERS_INDEX = 0;
 export declare const ASK_ORDERS_INDEX = 1;
 export declare const MAX_TOTAL_SPREAD_ACCOUNT_CONTRACTS = 100000000;
+export declare const DEFAULT_MICRO_LAMPORTS_PER_CU_FEE = 1000;

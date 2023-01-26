@@ -27,7 +27,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getClockData = exports.parseError = exports.processTransaction = exports.simulateTransaction = exports.commitmentConfig = exports.defaultCommitment = exports.getAssociatedTokenAddress = exports.getTokenAccountInfo = exports.getTokenMint = exports.convertDecimalToNativeLotSize = exports.convertNativeLotSizeToDecimal = exports.convertNativeBNToDecimal = exports.convertNativeIntegerToDecimal = exports.getTradeEventPrice = exports.convertDecimalToNativeInteger = exports.sortMarketKeys = exports.sortOpenOrderKeys = exports.getSerumVaultOwnerAndNonce = exports.getReferrerAliasAddress = exports.getReferralAccountAddress = exports.getReferrerAccountAddress = exports.getSocializedLossAccount = exports.getMarketUninitialized = exports.getSpreadAccount = exports.getMarginAccount = exports.getQuoteMint = exports.getBaseMint = exports.getMarketIndexes = exports.getPerpSyncQueue = exports.getGreeks = exports.getUnderlying = exports.getZetaGroup = exports.getUserWhitelistTradingFeesAccount = exports.getUserWhitelistInsuranceAccount = exports.getUserWhitelistDepositAccount = exports.getUserInsuranceDepositAccount = exports.getZetaReferralsRewardsWallet = exports.getZetaTreasuryWallet = exports.getZetaInsuranceVault = exports.getZetaVault = exports.getSerumVault = exports.getVault = exports.getMintAuthority = exports.getSerumAuthority = exports.getOpenOrdersMap = exports.createOpenOrdersAddress = exports.getOpenOrders = exports.getSettlement = exports.getMarketNode = exports.getState = void 0;
-exports.isOrderExpired = exports.getTIFOffset = exports.getProductLedger = exports.applyPerpFunding = exports.convertBufferToTrimmedString = exports.fetchReferrerAliasAccount = exports.objectEquals = exports.toAssets = exports.getOrCreateKeypair = exports.calculateMovementFees = exports.cancelExpiredOrdersAndCleanMarkets = exports.burnVaultTokens = exports.settleAndBurnVaultTokens = exports.settleAndBurnVaultTokensByMarket = exports.getAllOpenOrdersAccountsByMarket = exports.getAllProgramAccountAddresses = exports.writeKeypair = exports.getCancelAllIxs = exports.getMutMarketAccounts = exports.getMostRecentExpiredIndex = exports.expireSeries = exports.crankMarket = exports.settleUsers = exports.cleanZetaMarketsHalted = exports.cleanZetaMarkets = exports.getNextStrikeInitialisationTs = exports.getMarginFromOpenOrders = exports.displayState = exports.getGreeksIndex = exports.getDirtySeriesIndices = exports.getOrderedMarketIndexes = exports.sleep = exports.splitIxsIntoTx = exports.getSeqNumFromSerumOrderKey = exports.getPriceFromSerumOrderKey = void 0;
+exports.isOrderExpired = exports.getTIFOffset = exports.getProductLedger = exports.applyPerpFunding = exports.convertBufferToTrimmedString = exports.fetchReferrerAliasAccount = exports.objectEquals = exports.toAssets = exports.getOrCreateKeypair = exports.calculateMovementFees = exports.cancelExpiredOrdersAndCleanMarkets = exports.burnVaultTokens = exports.settleAndBurnVaultTokens = exports.settleAndBurnVaultTokensByMarket = exports.getAllOpenOrdersAccountsByMarket = exports.getAllProgramAccountAddresses = exports.writeKeypair = exports.getCancelAllIxs = exports.getMutMarketAccounts = exports.getMostRecentExpiredIndex = exports.expireSeries = exports.pruneExpiredTIFOrders = exports.crankMarket = exports.settleUsers = exports.cleanZetaMarketsHalted = exports.cleanZetaMarkets = exports.getNextStrikeInitialisationTs = exports.getMarginFromOpenOrders = exports.displayState = exports.getGreeksIndex = exports.getDirtySeriesIndices = exports.getOrderedMarketIndexes = exports.sleep = exports.splitIxsIntoTx = exports.getSeqNumFromSerumOrderKey = exports.getPriceFromSerumOrderKey = void 0;
 const anchor = __importStar(require("@project-serum/anchor"));
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
@@ -450,7 +450,7 @@ exports.simulateTransaction = simulateTransaction;
 async function processTransaction(provider, tx, signers, opts, useLedger = false, blockhash) {
     let txSig;
     if (blockhash == undefined) {
-        const recentBlockhash = await provider.connection.getRecentBlockhash();
+        const recentBlockhash = await provider.connection.getLatestBlockhash(commitmentConfig("finalized"));
         tx.recentBlockhash = recentBlockhash.blockhash;
     }
     else {
@@ -467,6 +467,11 @@ async function processTransaction(provider, tx, signers, opts, useLedger = false
         .forEach((kp) => {
         tx.partialSign(kp);
     });
+    if (exchange_1.exchange.usePriorityFees) {
+        tx.instructions.unshift(web3_js_1.ComputeBudgetProgram.setComputeUnitPrice({
+            microLamports: exchange_1.exchange.priorityFee,
+        }));
+    }
     if (useLedger) {
         tx = await exchange_1.exchange.ledgerWallet.signTransaction(tx);
     }
@@ -787,6 +792,19 @@ async function crankMarket(asset, marketIndex, openOrdersToMargin, crankLimit) {
     await processTransaction(exchange_1.exchange.provider, tx);
 }
 exports.crankMarket = crankMarket;
+/*
+ * prune expired TIF orders from a list of market indices.
+ */
+async function pruneExpiredTIFOrders(asset, marketIndices) {
+    let ixs = marketIndices.map((i) => {
+        return instructions.pruneExpiredTIFOrdersIx(asset, i);
+    });
+    let txs = splitIxsIntoTx(ixs, 5);
+    await Promise.all(txs.map(async (tx) => {
+        return processTransaction(exchange_1.exchange.provider, tx);
+    }));
+}
+exports.pruneExpiredTIFOrders = pruneExpiredTIFOrders;
 async function expireSeries(asset, expiryTs) {
     let subExchange = exchange_1.exchange.getSubExchange(asset);
     let [settlement, settlementNonce] = await getSettlement(exchange_1.exchange.programId, subExchange.zetaGroup.underlyingMint, expiryTs);
@@ -796,6 +814,8 @@ async function expireSeries(asset, expiryTs) {
             state: exchange_1.exchange.stateAddress,
             zetaGroup: subExchange.zetaGroupAddress,
             oracle: subExchange.zetaGroup.oracle,
+            oracleBackupFeed: subExchange.zetaGroup.oracleBackupFeed,
+            oracleBackupProgram: constants.CHAINLINK_PID,
             settlementAccount: settlement,
             payer: exchange_1.exchange.provider.wallet.publicKey,
             systemProgram: web3_js_1.SystemProgram.programId,
@@ -1083,19 +1103,51 @@ function getProductLedger(marginAccount, index) {
     return marginAccount.productLedgers[index];
 }
 exports.getProductLedger = getProductLedger;
-function getTIFOffset(explicitTIF, tifOffset, currEpochStartTs, epochLength) {
-    if (explicitTIF) {
+function getTIFOffset(marketInfo, tifOptions) {
+    if (tifOptions.expiryOffset == undefined &&
+        tifOptions.expiryTs == undefined) {
+        return 0;
+    }
+    if (tifOptions.expiryOffset != undefined &&
+        tifOptions.expiryTs != undefined) {
+        throw new Error("Cannot set both expiryOffset and expiryTs");
+    }
+    let currEpochStartTs = marketInfo.serumMarket.epochStartTs.toNumber();
+    let epochLength = marketInfo.serumMarket.epochLength.toNumber();
+    let epochEnd = currEpochStartTs + epochLength;
+    let now = exchange_1.exchange.clockTimestamp;
+    // get correct epoch end in case where serumMarket data is not up to date
+    if (now > epochEnd) {
+        currEpochStartTs = now - (now % epochLength);
+        epochEnd = currEpochStartTs + epochLength;
+    }
+    if (tifOptions.expiryOffset != undefined) {
+        if (tifOptions.expiryOffset <= 0) {
+            throw new Error("Invalid expiry offset");
+        }
+        let desiredExpiryTs = now + tifOptions.expiryOffset;
+        let desiredOffset = desiredExpiryTs % epochLength;
+        if (epochEnd >= desiredExpiryTs) {
+            return desiredOffset;
+        }
+        else {
+            // Cap the offset at the end of the cycle.
+            return epochLength;
+        }
+    }
+    if (tifOptions.expiryTs != undefined) {
+        if (tifOptions.expiryTs < exchange_1.exchange.clockTimestamp) {
+            throw new Error("Cannot place an expired order");
+        }
+        let tifOffset = tifOptions.expiryTs - currEpochStartTs;
+        if (tifOffset > epochLength) {
+            return epochLength;
+        }
+        if (tifOffset <= 0) {
+            throw new Error("Cannot place an expired order");
+        }
         return tifOffset;
     }
-    let now = exchange_1.exchange.clockTimestamp;
-    let epochStartTsToUse = 0;
-    if (currEpochStartTs + epochLength < now) {
-        epochStartTsToUse = now - (now % epochLength);
-    }
-    else {
-        epochStartTsToUse = currEpochStartTs;
-    }
-    return now - epochStartTsToUse + tifOffset;
 }
 exports.getTIFOffset = getTIFOffset;
 function isOrderExpired(orderTIFOffset, orderSeqNum, epochStartTs, startEpochSeqNum) {

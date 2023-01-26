@@ -116,6 +116,7 @@ export declare function cleanZetaMarkets(asset: Asset, marketAccountTuples: any[
 export declare function cleanZetaMarketsHalted(asset: Asset, marketAccountTuples: any[]): Promise<void>;
 export declare function settleUsers(asset: Asset, keys: PublicKey[], expiryTs: anchor.BN, accountType?: types.ProgramAccountType): Promise<void>;
 export declare function crankMarket(asset: Asset, marketIndex: number, openOrdersToMargin?: Map<PublicKey, PublicKey>, crankLimit?: number): Promise<void>;
+export declare function pruneExpiredTIFOrders(asset: Asset, marketIndices: number[]): Promise<void>;
 export declare function expireSeries(asset: Asset, expiryTs: anchor.BN): Promise<void>;
 /**
  * Get the most recently expired index
@@ -145,5 +146,5 @@ export declare function fetchReferrerAliasAccount(referrer?: PublicKey, alias?: 
 export declare function convertBufferToTrimmedString(buffer: number[]): string;
 export declare function applyPerpFunding(asset: Asset, keys: PublicKey[]): Promise<void>;
 export declare function getProductLedger(marginAccount: MarginAccount, index: number): import("./program-types").ProductLedger;
-export declare function getTIFOffset(explicitTIF: boolean, tifOffset: number, currEpochStartTs: number, epochLength: number): number;
+export declare function getTIFOffset(marketInfo: Market, tifOptions: types.TIFOptions): any;
 export declare function isOrderExpired(orderTIFOffset: number, orderSeqNum: anchor.BN, epochStartTs: number, startEpochSeqNum: anchor.BN): boolean;

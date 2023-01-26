@@ -48,6 +48,8 @@ class Exchange {
         this._pollInterval = constants.DEFAULT_EXCHANGE_POLL_INTERVAL;
         this._useLedger = false;
         this._programSubscriptionIds = [];
+        this._priorityFee = 0;
+        this._usePriorityFees = false;
     }
     /**
      * Whether the object has been set up (in .initialize()).
@@ -192,6 +194,23 @@ class Exchange {
         this._useLedger = true;
         this._ledgerWallet = wallet;
     }
+    // Micro lamports per CU of fees.
+    get priorityFee() {
+        return this._priorityFee;
+    }
+    get usePriorityFees() {
+        return this._usePriorityFees;
+    }
+    toggleUsePriorityFees(microLamportsPerCU = constants.DEFAULT_MICRO_LAMPORTS_PER_CU_FEE) {
+        if (this._usePriorityFees) {
+            throw Error("Priority fees already turned on");
+        }
+        this._usePriorityFees = true;
+        this._priorityFee = microLamportsPerCU;
+    }
+    updatePriorityFee(microLamportsPerCU) {
+        this._priorityFee = microLamportsPerCU;
+    }
     async initialize(assets, programId, network, connection, opts, wallet = new types.DummyWallet()) {
         if (this.isSetup) {
             throw "Exchange already setup";
@@ -228,8 +247,8 @@ class Exchange {
         this._referralsRewardsWalletAddress = referralRewardsWallet;
         await this.updateState();
     }
-    async initializeZetaGroup(asset, oracle, pricingArgs, perpArgs, marginArgs, expiryArgs) {
-        let tx = new web3_js_1.Transaction().add(await instructions.initializeZetaGroupIx(asset, constants.MINTS[asset], oracle, pricingArgs, perpArgs, marginArgs, expiryArgs));
+    async initializeZetaGroup(asset, oracle, oracleBackupFeed, oracleBackupProgram, pricingArgs, perpArgs, marginArgs, expiryArgs) {
+        let tx = new web3_js_1.Transaction().add(await instructions.initializeZetaGroupIx(asset, constants.MINTS[asset], oracle, oracleBackupFeed, oracleBackupProgram, pricingArgs, perpArgs, marginArgs, expiryArgs));
         try {
             await utils.processTransaction(this._provider, tx, [], utils.defaultCommitment(), this.useLedger);
         }

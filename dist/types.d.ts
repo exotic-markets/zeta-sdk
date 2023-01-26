@@ -22,28 +22,39 @@ export declare enum OrderType {
     LIMIT = 0,
     POSTONLY = 1,
     FILLORKILL = 2,
-    IMMEDIATEORCANCEL = 3
+    IMMEDIATEORCANCEL = 3,
+    POSTONLYSLIDE = 4
 }
 export declare function toProgramOrderType(orderType: OrderType): {
     limit: {};
     postOnly?: undefined;
     fillOrKill?: undefined;
     immediateOrCancel?: undefined;
+    postOnlySlide?: undefined;
 } | {
     postOnly: {};
     limit?: undefined;
     fillOrKill?: undefined;
     immediateOrCancel?: undefined;
+    postOnlySlide?: undefined;
 } | {
     fillOrKill: {};
     limit?: undefined;
     postOnly?: undefined;
     immediateOrCancel?: undefined;
+    postOnlySlide?: undefined;
 } | {
     immediateOrCancel: {};
     limit?: undefined;
     postOnly?: undefined;
     fillOrKill?: undefined;
+    postOnlySlide?: undefined;
+} | {
+    postOnlySlide: {};
+    limit?: undefined;
+    postOnly?: undefined;
+    fillOrKill?: undefined;
+    immediateOrCancel?: undefined;
 };
 export declare enum Side {
     BID = 0,
@@ -202,11 +213,19 @@ export declare enum OrderCompleteType {
 }
 export declare function fromProgramOrderCompleteType(orderCompleteType: any): OrderCompleteType;
 export interface OrderOptions {
-    explicitTIF?: boolean;
-    tifOffset?: number;
+    tifOptions: TIFOptions;
     orderType?: types.OrderType;
     clientOrderId?: number;
     tag?: string;
     blockhash?: string;
+}
+/**
+ * Only set one of these options
+ * @field expiryOffset  seconds in future that the order will expire. Set to undefined to disable TIF.
+ * @field expiryTs      timestamp that the order will expire. Set to undefined to disable TIF.
+ */
+export interface TIFOptions {
+    expiryOffset?: number | undefined;
+    expiryTs?: number | undefined;
 }
 export declare function defaultOrderOptions(): OrderOptions;

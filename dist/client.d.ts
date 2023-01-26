@@ -66,9 +66,11 @@ export declare class Client {
      */
     private _pollIntervalId;
     get subClients(): Map<Asset, SubClient>;
+    get delegatorKey(): PublicKey;
+    _delegatorKey: PublicKey;
     private constructor();
     private _subClients;
-    static load(connection: Connection, wallet: types.Wallet, opts?: ConfirmOptions, callback?: (asset: Asset, type: EventType, data: any) => void, throttle?: boolean): Promise<Client>;
+    static load(connection: Connection, wallet: types.Wallet, opts?: ConfirmOptions, callback?: (asset: Asset, type: EventType, data: any) => void, throttle?: boolean, delegator?: PublicKey): Promise<Client>;
     private addSubClient;
     getSubClient(asset: Asset): SubClient;
     getAllSubClients(): SubClient[];
@@ -86,6 +88,7 @@ export declare class Client {
     createPlaceOrderInstruction(asset: Asset, marketIndex: number, price: number, size: number, side: types.Side, options?: types.OrderOptions): TransactionInstruction;
     createCancelOrderNoErrorInstruction(asset: Asset, market: types.MarketIdentifier, orderId: anchor.BN, side: types.Side): TransactionInstruction;
     createCancelAllMarketOrdersInstruction(asset: Asset, market: types.MarketIdentifier): TransactionInstruction;
+    editDelegatedPubkey(asset: Asset, delegatedPubkey: PublicKey): Promise<TransactionSignature>;
     migrateFunds(amount: number, withdrawAsset: assets.Asset, depositAsset: assets.Asset): Promise<TransactionSignature>;
     deposit(asset: Asset, amount: number): Promise<TransactionSignature>;
     private usdcAccountCheck;
@@ -135,10 +138,12 @@ export declare class Client {
     getSpreadAccountAddress(asset: Asset): PublicKey;
     getMarginAccount(asset: Asset): MarginAccount;
     getMarginAccountAddress(asset: Asset): PublicKey;
+    getMarginAccountAddresses(): PublicKey[];
     initializeReferrerAccount(): Promise<void>;
     initializeReferrerAlias(alias: string): Promise<TransactionSignature>;
     claimReferrerRewards(): Promise<TransactionSignature>;
     claimReferralRewards(): Promise<TransactionSignature>;
     getProductLedger(asset: Asset, marketIndex: number): ProductLedger;
     close(): Promise<void>;
+    private delegatedCheck;
 }

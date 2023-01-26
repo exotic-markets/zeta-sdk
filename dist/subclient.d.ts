@@ -106,7 +106,7 @@ export declare class SubClient {
      *                    If set to false, margin account callbacks will also call
      *                    `updateState` instead of waiting for the poll.
      */
-    static load(asset: Asset, parent: Client, connection: Connection, wallet: types.Wallet, callback?: (asset: Asset, type: EventType, data: any) => void, throttle?: boolean): Promise<SubClient>;
+    static load(asset: Asset, parent: Client, connection: Connection, user: PublicKey, callback?: (asset: Asset, type: EventType, data: any) => void, throttle?: boolean): Promise<SubClient>;
     pollUpdate(): Promise<void>;
     private toggleUpdateState;
     private checkResetUpdatingState;
@@ -161,7 +161,7 @@ export declare class SubClient {
      * from the user open orders account before cancelling the second order.
      * (Depending on the order in which the order was cancelled).
      */
-    placeOrder(market: PublicKey, price: number, size: number, side: types.Side, options: types.OrderOptions): Promise<TransactionSignature>;
+    placeOrder(market: PublicKey, price: number, size: number, side: types.Side, options?: types.OrderOptions): Promise<TransactionSignature>;
     /**
      * Places an order on a zeta perp market.
      * @param price           the native price of the order (6 d.p as integer)
@@ -176,11 +176,12 @@ export declare class SubClient {
      * from the user open orders account before cancelling the second order.
      * (Depending on the order in which the order was cancelled).
      */
-    placePerpOrder(price: number, size: number, side: types.Side, options: types.OrderOptions): Promise<TransactionSignature>;
+    placePerpOrder(price: number, size: number, side: types.Side, options?: types.OrderOptions): Promise<TransactionSignature>;
+    editDelegatedPubkey(delegatedPubkey: PublicKey): Promise<TransactionSignature>;
     createCancelOrderNoErrorInstruction(marketIndex: number, orderId: anchor.BN, side: types.Side): TransactionInstruction;
     createCancelAllMarketOrdersInstruction(marketIndex: number): TransactionInstruction;
-    createPlaceOrderInstruction(marketIndex: number, price: number, size: number, side: types.Side, options: types.OrderOptions): TransactionInstruction;
-    createPlacePerpOrderInstruction(price: number, size: number, side: types.Side, options: types.OrderOptions): TransactionInstruction;
+    createPlaceOrderInstruction(marketIndex: number, price: number, size: number, side: types.Side, options?: types.OrderOptions): TransactionInstruction;
+    createPlacePerpOrderInstruction(price: number, size: number, side: types.Side, options?: types.OrderOptions): TransactionInstruction;
     /**
      * Cancels a user order by orderId
      * @param market     the market address of the order to be cancelled.
@@ -207,7 +208,7 @@ export declare class SubClient {
      * @param clientOrderId   optional: subClient order id (non 0 value)
      * @param newOrderTag     optional: the string tag corresponding to who is inserting. Default "SDK", max 4 length
      */
-    cancelAndPlaceOrder(market: PublicKey, orderId: anchor.BN, cancelSide: types.Side, newOrderPrice: number, newOrderSize: number, newOrderSide: types.Side, options: types.OrderOptions): Promise<TransactionSignature>;
+    cancelAndPlaceOrder(market: PublicKey, orderId: anchor.BN, cancelSide: types.Side, newOrderPrice: number, newOrderSize: number, newOrderSide: types.Side, options?: types.OrderOptions): Promise<TransactionSignature>;
     /**
      * Cancels a user order by subClient order id and atomically places an order by new subClient order id.
      * @param market                  the market address of the order to be cancelled and new order.
@@ -219,7 +220,7 @@ export declare class SubClient {
      * @param newOrderClientOrderId   the subClient order id for the new order
      * @param newOrderTag     optional: the string tag corresponding to who is inserting. Default "SDK", max 4 length
      */
-    cancelAndPlaceOrderByClientOrderId(market: PublicKey, cancelClientOrderId: number, newOrderPrice: number, newOrderSize: number, newOrderSide: types.Side, newOptions: types.OrderOptions): Promise<TransactionSignature>;
+    cancelAndPlaceOrderByClientOrderId(market: PublicKey, cancelClientOrderId: number, newOrderPrice: number, newOrderSize: number, newOrderSide: types.Side, newOptions?: types.OrderOptions): Promise<TransactionSignature>;
     /**
      * Cancels a user order by client order id and atomically places an order by new client order id.
      * Uses the 'NoError' cancel instruction, so a failed cancellation won't prohibit the placeOrder
@@ -232,7 +233,7 @@ export declare class SubClient {
      * @param newOrderClientOrderId   the client order id for the new order
      * @param newOrderTag     optional: the string tag corresponding to who is inserting. Default "SDK", max 4 length
      */
-    replaceByClientOrderId(market: PublicKey, cancelClientOrderId: number, newOrderPrice: number, newOrderSize: number, newOrderSide: types.Side, newOptions: types.OrderOptions): Promise<TransactionSignature>;
+    replaceByClientOrderId(market: PublicKey, cancelClientOrderId: number, newOrderPrice: number, newOrderSize: number, newOrderSide: types.Side, newOptions?: types.OrderOptions): Promise<TransactionSignature>;
     /**
      * Initializes a user open orders account for a given market.
      * This is handled atomically by place order but can be used by subClients to initialize it independent of placing an order.
@@ -351,4 +352,5 @@ export declare class SubClient {
      * Closes the subClient websocket subscription to margin account.
      */
     close(): Promise<void>;
+    private delegatedCheck;
 }

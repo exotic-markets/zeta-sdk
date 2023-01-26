@@ -278,7 +278,8 @@ function divideBnToNumber(numerator, denominator) {
     const quotient = numerator.div(denominator).toNumber();
     const rem = numerator.umod(denominator);
     const gcd = rem.gcd(denominator);
-    return quotient + rem.div(gcd).toNumber() / denominator.div(gcd).toNumber();
+    return +(quotient +
+        rem.div(gcd).toNumber() / denominator.div(gcd).toNumber()).toFixed(6);
 }
 const MINT_LAYOUT = (0, buffer_layout_1.struct)([(0, buffer_layout_1.blob)(44), (0, buffer_layout_1.u8)("decimals"), (0, buffer_layout_1.blob)(37)]);
 async function getMintDecimals(connection, mint) {

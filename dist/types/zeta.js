@@ -39,6 +39,16 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
                     "name": "zetaGroup",
                     "isMut": true,
                     "isSigner": false
@@ -759,6 +769,32 @@ exports.IDL = {
             "args": []
         },
         {
+            "name": "updateOracleBackupFeed",
+            "accounts": [
+                {
+                    "name": "state",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "zetaGroup",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "admin",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "oracle",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
             "name": "updatePricingParameters",
             "accounts": [
                 {
@@ -1021,6 +1057,16 @@ exports.IDL = {
                     "name": "oracle",
                     "isMut": false,
                     "isSigner": false
+                },
+                {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
+                    "isMut": false,
+                    "isSigner": false
                 }
             ],
             "args": []
@@ -1083,6 +1129,16 @@ exports.IDL = {
                 },
                 {
                     "name": "oracle",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
                     "isMut": false,
                     "isSigner": false
                 },
@@ -1290,6 +1346,16 @@ exports.IDL = {
                     "name": "oracle",
                     "isMut": false,
                     "isSigner": false
+                },
+                {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
+                    "isMut": false,
+                    "isSigner": false
                 }
             ],
             "args": [
@@ -1376,6 +1442,16 @@ exports.IDL = {
                 },
                 {
                     "name": "oracle",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
                     "isMut": false,
                     "isSigner": false
                 },
@@ -1616,6 +1692,16 @@ exports.IDL = {
                 },
                 {
                     "name": "oracle",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
                     "isMut": false,
                     "isSigner": false
                 },
@@ -2053,6 +2139,16 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
                     "name": "marketNode",
                     "isMut": true,
                     "isSigner": false
@@ -2201,6 +2297,16 @@ exports.IDL = {
                 },
                 {
                     "name": "oracle",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
                     "isMut": false,
                     "isSigner": false
                 },
@@ -2359,6 +2465,16 @@ exports.IDL = {
                 },
                 {
                     "name": "oracle",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
                     "isMut": false,
                     "isSigner": false
                 },
@@ -2527,6 +2643,16 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
                     "name": "marketMint",
                     "isMut": true,
                     "isSigner": false
@@ -2687,6 +2813,16 @@ exports.IDL = {
                 },
                 {
                     "name": "oracle",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
                     "isMut": false,
                     "isSigner": false
                 },
@@ -2857,6 +2993,16 @@ exports.IDL = {
                 },
                 {
                     "name": "oracle",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
                     "isMut": false,
                     "isSigner": false
                 },
@@ -3424,6 +3570,47 @@ exports.IDL = {
             ]
         },
         {
+            "name": "pruneExpiredTifOrders",
+            "accounts": [
+                {
+                    "name": "dexProgram",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "state",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "serumAuthority",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "market",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "bids",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "asks",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "eventQueue",
+                    "isMut": true,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
             "name": "forceCancelOrderByOrderId",
             "accounts": [
                 {
@@ -3433,6 +3620,16 @@ exports.IDL = {
                 },
                 {
                     "name": "oracle",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
                     "isMut": false,
                     "isSigner": false
                 },
@@ -3515,6 +3712,16 @@ exports.IDL = {
                 },
                 {
                     "name": "oracle",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
                     "isMut": false,
                     "isSigner": false
                 },
@@ -3770,6 +3977,16 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
                     "name": "market",
                     "isMut": false,
                     "isSigner": false
@@ -3919,6 +4136,16 @@ exports.IDL = {
                 },
                 {
                     "name": "oracle",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "oracleBackupProgram",
                     "isMut": false,
                     "isSigner": false
                 }
@@ -4130,6 +4357,42 @@ exports.IDL = {
                 }
             ],
             "args": []
+        },
+        {
+            "name": "editDelegatedPubkey",
+            "accounts": [
+                {
+                    "name": "state",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "zetaGroup",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "marginAccount",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenProgram",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "authority",
+                    "isMut": false,
+                    "isSigner": true
+                }
+            ],
+            "args": [
+                {
+                    "name": "newKey",
+                    "type": "publicKey"
+                }
+            ]
         }
     ],
     "accounts": [
@@ -4653,11 +4916,15 @@ exports.IDL = {
                         "type": "publicKey"
                     },
                     {
+                        "name": "oracleBackupFeed",
+                        "type": "publicKey"
+                    },
+                    {
                         "name": "padding",
                         "type": {
                             "array": [
                                 "u8",
-                                998
+                                966
                             ]
                         }
                     }
@@ -4857,11 +5124,15 @@ exports.IDL = {
                         }
                     },
                     {
+                        "name": "delegatedPubkey",
+                        "type": "publicKey"
+                    },
+                    {
                         "name": "padding",
                         "type": {
                             "array": [
                                 "u8",
-                                370
+                                338
                             ]
                         }
                     }
@@ -6128,6 +6399,9 @@ exports.IDL = {
                     },
                     {
                         "name": "ImmediateOrCancel"
+                    },
+                    {
+                        "name": "PostOnlySlide"
                     }
                 ]
             }
@@ -6270,6 +6544,23 @@ exports.IDL = {
                     },
                     {
                         "name": "PlacePerpOrder"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ValidationType",
+            "type": {
+                "kind": "enum",
+                "variants": [
+                    {
+                        "name": "Place"
+                    },
+                    {
+                        "name": "Cancel"
+                    },
+                    {
+                        "name": "OpenOrders"
                     }
                 ]
             }
@@ -7210,6 +7501,16 @@ exports.IDL = {
             "code": 6128,
             "name": "ForceCancelExpiredTIFOrdersOnly",
             "msg": "Can only force cancel expired TIF orders"
+        },
+        {
+            "code": 6129,
+            "name": "InvalidPlaceOrderAuthority",
+            "msg": "Invalid place order authority"
+        },
+        {
+            "code": 6130,
+            "name": "InvalidOpenOrdersAuthority",
+            "msg": "Invalid open orders authority"
         }
     ]
 };

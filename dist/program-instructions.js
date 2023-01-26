@@ -23,8 +23,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.referUserIx = exports.initializeWhitelistTradingFeesAccountIx = exports.initializeWhitelistInsuranceAccountIx = exports.initializeWhitelistDepositAccountIx = exports.initializeMarketStrikesIx = exports.addMarketIndexesIx = exports.initializeMarketIndexesIx = exports.updateZetaStateIx = exports.initializeZetaReferralsRewardsWalletIx = exports.initializeZetaTreasuryWalletIx = exports.initializeZetaStateIx = exports.updateVolatilityNodesIx = exports.updateZetaGroupExpiryParameters = exports.updatePerpParametersIx = exports.updateMarginParametersIx = exports.updatePricingParametersIx = exports.applyPerpFundingIx = exports.updatePricingIx = exports.retreatMarketNodesIx = exports.initializeMarketNodeIx = exports.crankMarketIx = exports.liquidateIx = exports.rebalanceInsuranceVaultIx = exports.treasuryMovementIx = exports.collectTreasuryFundsIx = exports.initializeZetaGroupIx = exports.initializePerpSyncQueueIx = exports.initializeZetaMarketTxs = exports.initializeZetaMarketTIFEpochCyclesIx = exports.forceCancelOrdersIx = exports.forceCancelOrderByOrderIdIx = exports.cancelExpiredOrderIx = exports.cancelOrderByClientOrderIdNoErrorIx = exports.cancelOrderByClientOrderIdIx = exports.cancelAllMarketOrdersIx = exports.cancelOrderNoErrorIx = exports.cancelOrderIx = exports.placePerpOrderV2Ix = exports.placePerpOrderIx = exports.placeOrderV4Ix = exports.placeOrderV3Ix = exports.closeOpenOrdersIx = exports.initializeOpenOrdersIx = exports.withdrawIx = exports.withdrawInsuranceVaultIx = exports.depositInsuranceVaultIx = exports.depositIx = exports.initializeInsuranceDepositAccountIx = exports.closeMarginAccountIx = exports.initializeMarginAccountIx = void 0;
-exports.toggleMarketMakerIx = exports.overrideExpiryIx = exports.burnVaultTokenTx = exports.settleDexFundsIx = exports.settleDexFundsTxs = exports.transferExcessSpreadBalanceIx = exports.positionMovementIx = exports.closeSpreadAccountIx = exports.initializeSpreadAccountIx = exports.expireSeriesOverrideIx = exports.updateReferralsAdminIx = exports.updateAdminIx = exports.updateInterestRateIx = exports.updateVolatilityIx = exports.updateHaltStateIx = exports.unhaltZetaGroupIx = exports.haltZetaGroupIx = exports.cancelOrderHaltedIx = exports.cleanMarketNodesIx = exports.updatePricingHaltedIx = exports.cleanZetaMarketsHaltedIx = exports.cleanZetaMarketsIx = exports.settleSpreadPositionsHaltedIx = exports.settlePositionsHaltedIx = exports.settlePositionsHaltedTxs = exports.settleSpreadPositionsHaltedTxs = exports.settleSpreadPositionsIx = exports.settlePositionsIx = exports.settlePositionsTxs = exports.claimReferralsRewardsIx = exports.setReferralsRewardsIx = exports.initializeReferrerAliasIx = exports.initializeReferrerAccountIx = void 0;
+exports.initializeWhitelistTradingFeesAccountIx = exports.initializeWhitelistInsuranceAccountIx = exports.initializeWhitelistDepositAccountIx = exports.initializeMarketStrikesIx = exports.addMarketIndexesIx = exports.initializeMarketIndexesIx = exports.updateZetaStateIx = exports.initializeZetaReferralsRewardsWalletIx = exports.initializeZetaTreasuryWalletIx = exports.initializeZetaStateIx = exports.updateVolatilityNodesIx = exports.updateZetaGroupExpiryParameters = exports.updatePerpParametersIx = exports.updateMarginParametersIx = exports.updatePricingParametersIx = exports.applyPerpFundingIx = exports.updatePricingIx = exports.retreatMarketNodesIx = exports.initializeMarketNodeIx = exports.crankMarketIx = exports.liquidateIx = exports.rebalanceInsuranceVaultIx = exports.treasuryMovementIx = exports.collectTreasuryFundsIx = exports.initializeZetaGroupIx = exports.initializePerpSyncQueueIx = exports.initializeZetaMarketTxs = exports.initializeZetaMarketTIFEpochCyclesIx = exports.forceCancelOrdersIx = exports.forceCancelOrderByOrderIdIx = exports.cancelExpiredOrderIx = exports.cancelOrderByClientOrderIdNoErrorIx = exports.cancelOrderByClientOrderIdIx = exports.cancelAllMarketOrdersIx = exports.pruneExpiredTIFOrdersIx = exports.cancelOrderNoErrorIx = exports.cancelOrderIx = exports.placePerpOrderV2Ix = exports.placePerpOrderIx = exports.placeOrderV4Ix = exports.placeOrderV3Ix = exports.closeOpenOrdersIx = exports.initializeOpenOrdersIx = exports.withdrawIx = exports.withdrawInsuranceVaultIx = exports.depositInsuranceVaultIx = exports.depositIx = exports.initializeInsuranceDepositAccountIx = exports.closeMarginAccountIx = exports.initializeMarginAccountIx = void 0;
+exports.editDelegatedPubkeyIx = exports.toggleMarketMakerIx = exports.overrideExpiryIx = exports.burnVaultTokenTx = exports.settleDexFundsIx = exports.settleDexFundsTxs = exports.transferExcessSpreadBalanceIx = exports.positionMovementIx = exports.closeSpreadAccountIx = exports.initializeSpreadAccountIx = exports.expireSeriesOverrideIx = exports.updateReferralsAdminIx = exports.updateAdminIx = exports.updateInterestRateIx = exports.updateVolatilityIx = exports.updateHaltStateIx = exports.unhaltZetaGroupIx = exports.haltZetaGroupIx = exports.cancelOrderHaltedIx = exports.cleanMarketNodesIx = exports.updatePricingHaltedIx = exports.cleanZetaMarketsHaltedIx = exports.cleanZetaMarketsIx = exports.settleSpreadPositionsHaltedIx = exports.settlePositionsHaltedIx = exports.settlePositionsHaltedTxs = exports.settleSpreadPositionsHaltedTxs = exports.settleSpreadPositionsIx = exports.settlePositionsIx = exports.settlePositionsTxs = exports.claimReferralsRewardsIx = exports.setReferralsRewardsIx = exports.initializeReferrerAliasIx = exports.initializeReferrerAccountIx = exports.referUserIx = void 0;
 const exchange_1 = require("./exchange");
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
@@ -152,12 +152,14 @@ function withdrawIx(asset, amount, marginAccount, usdcAccount, userKey) {
             tokenProgram: spl_token_1.TOKEN_PROGRAM_ID,
             greeks: subExchange.zetaGroup.greeks,
             oracle: subExchange.zetaGroup.oracle,
+            oracleBackupFeed: subExchange.zetaGroup.oracleBackupFeed,
+            oracleBackupProgram: constants.CHAINLINK_PID,
             socializedLossAccount: subExchange.socializedLossAccountAddress,
         },
     });
 }
 exports.withdrawIx = withdrawIx;
-async function initializeOpenOrdersIx(asset, market, userKey, marginAccount) {
+async function initializeOpenOrdersIx(asset, market, userKey, authority, marginAccount) {
     const [openOrdersPda, _openOrdersNonce] = await utils.getOpenOrders(exchange_1.exchange.programId, market, userKey);
     const [openOrdersMap, _openOrdersMapNonce] = await utils.getOpenOrdersMap(exchange_1.exchange.programId, openOrdersPda);
     return [
@@ -169,8 +171,8 @@ async function initializeOpenOrdersIx(asset, market, userKey, marginAccount) {
                 systemProgram: web3_js_1.SystemProgram.programId,
                 openOrders: openOrdersPda,
                 marginAccount: marginAccount,
-                authority: userKey,
-                payer: userKey,
+                authority: authority,
+                payer: authority,
                 market: market,
                 rent: web3_js_1.SYSVAR_RENT_PUBKEY,
                 serumAuthority: exchange_1.exchange.serumAuthority,
@@ -241,6 +243,8 @@ function placeOrderV3Ix(asset, marketIndex, price, size, side, orderType, client
                 pcWallet: marketData.quoteVault,
             },
             oracle: subExchange.zetaGroup.oracle,
+            oracleBackupFeed: subExchange.zetaGroup.oracleBackupFeed,
+            oracleBackupProgram: constants.CHAINLINK_PID,
             marketNode: subExchange.greeks.nodeKeys[marketIndex],
             marketMint: side == types.Side.BID
                 ? marketData.serumMarket.quoteMintAddress
@@ -294,6 +298,8 @@ function placeOrderV4Ix(asset, marketIndex, price, size, side, orderType, client
                 pcWallet: marketData.quoteVault,
             },
             oracle: subExchange.zetaGroup.oracle,
+            oracleBackupFeed: subExchange.zetaGroup.oracleBackupFeed,
+            oracleBackupProgram: constants.CHAINLINK_PID,
             marketNode: subExchange.greeks.nodeKeys[marketIndex],
             marketMint: side == types.Side.BID
                 ? marketData.serumMarket.quoteMintAddress
@@ -347,6 +353,8 @@ function placePerpOrderIx(asset, marketIndex, price, size, side, orderType, clie
                 pcWallet: marketData.quoteVault,
             },
             oracle: subExchange.zetaGroup.oracle,
+            oracleBackupFeed: subExchange.zetaGroup.oracleBackupFeed,
+            oracleBackupProgram: constants.CHAINLINK_PID,
             marketMint: side == types.Side.BID
                 ? marketData.serumMarket.quoteMintAddress
                 : marketData.serumMarket.baseMintAddress,
@@ -400,6 +408,8 @@ function placePerpOrderV2Ix(asset, marketIndex, price, size, side, orderType, cl
                 pcWallet: marketData.quoteVault,
             },
             oracle: subExchange.zetaGroup.oracle,
+            oracleBackupFeed: subExchange.zetaGroup.oracleBackupFeed,
+            oracleBackupProgram: constants.CHAINLINK_PID,
             marketMint: side == types.Side.BID
                 ? marketData.serumMarket.quoteMintAddress
                 : marketData.serumMarket.baseMintAddress,
@@ -454,6 +464,21 @@ function cancelOrderNoErrorIx(asset, marketIndex, userKey, marginAccount, openOr
     });
 }
 exports.cancelOrderNoErrorIx = cancelOrderNoErrorIx;
+function pruneExpiredTIFOrdersIx(asset, marketIndex) {
+    let marketData = exchange_1.exchange.getMarket(asset, marketIndex);
+    return exchange_1.exchange.program.instruction.pruneExpiredTifOrders({
+        accounts: {
+            dexProgram: constants.DEX_PID[exchange_1.exchange.network],
+            state: exchange_1.exchange.stateAddress,
+            serumAuthority: exchange_1.exchange.serumAuthority,
+            market: marketData.address,
+            bids: marketData.serumMarket.bidsAddress,
+            asks: marketData.serumMarket.asksAddress,
+            eventQueue: marketData.serumMarket.eventQueueAddress,
+        },
+    });
+}
+exports.pruneExpiredTIFOrdersIx = pruneExpiredTIFOrdersIx;
 function cancelAllMarketOrdersIx(asset, marketIndex, userKey, marginAccount, openOrders) {
     let subExchange = exchange_1.exchange.getSubExchange(asset);
     let marketData = exchange_1.exchange.getMarket(asset, marketIndex);
@@ -548,6 +573,8 @@ function forceCancelOrderByOrderIdIx(asset, marketIndex, marginAccount, openOrde
         accounts: {
             greeks: subExchange.zetaGroup.greeks,
             oracle: subExchange.zetaGroup.oracle,
+            oracleBackupFeed: subExchange.zetaGroup.oracleBackupFeed,
+            oracleBackupProgram: constants.CHAINLINK_PID,
             cancelAccounts: {
                 zetaGroup: subExchange.zetaGroupAddress,
                 state: exchange_1.exchange.stateAddress,
@@ -571,6 +598,8 @@ function forceCancelOrdersIx(asset, marketIndex, marginAccount, openOrders) {
         accounts: {
             greeks: subExchange.zetaGroup.greeks,
             oracle: subExchange.zetaGroup.oracle,
+            oracleBackupFeed: subExchange.zetaGroup.oracleBackupFeed,
+            oracleBackupProgram: constants.CHAINLINK_PID,
             cancelAccounts: {
                 zetaGroup: subExchange.zetaGroupAddress,
                 state: exchange_1.exchange.stateAddress,
@@ -693,7 +722,7 @@ async function initializePerpSyncQueueIx(asset) {
     });
 }
 exports.initializePerpSyncQueueIx = initializePerpSyncQueueIx;
-async function initializeZetaGroupIx(asset, underlyingMint, oracle, pricingArgs, perpArgs, marginArgs, expiryArgs) {
+async function initializeZetaGroupIx(asset, underlyingMint, oracle, oracleBackupFeed, oracleBackupProgram, pricingArgs, perpArgs, marginArgs, expiryArgs) {
     let [zetaGroup, zetaGroupNonce] = await utils.getZetaGroup(exchange_1.exchange.programId, underlyingMint);
     let [underlying, underlyingNonce] = await utils.getUnderlying(exchange_1.exchange.programId, exchange_1.exchange.state.numUnderlyings);
     let subExchange = exchange_1.exchange.getSubExchange(asset);
@@ -746,6 +775,8 @@ async function initializeZetaGroupIx(asset, underlyingMint, oracle, pricingArgs,
             underlyingMint,
             zetaProgram: exchange_1.exchange.programId,
             oracle,
+            oracleBackupFeed,
+            oracleBackupProgram,
             zetaGroup,
             greeks,
             perpSyncQueue,
@@ -811,6 +842,8 @@ function liquidateIx(asset, liquidator, liquidatorMarginAccount, market, liquida
             liquidatorMarginAccount,
             greeks: subExchange.zetaGroup.greeks,
             oracle: subExchange.zetaGroup.oracle,
+            oracleBackupFeed: subExchange.zetaGroup.oracleBackupFeed,
+            oracleBackupProgram: constants.CHAINLINK_PID,
             market,
             zetaGroup: subExchange.zetaGroupAddress,
             liquidatedMarginAccount,
@@ -863,6 +896,8 @@ function retreatMarketNodesIx(asset, expiryIndex) {
             zetaGroup: subExchange.zetaGroupAddress,
             greeks: subExchange.greeksAddress,
             oracle: subExchange.zetaGroup.oracle,
+            oracleBackupFeed: subExchange.zetaGroup.oracleBackupFeed,
+            oracleBackupProgram: constants.CHAINLINK_PID,
         },
         remainingAccounts,
     });
@@ -877,6 +912,8 @@ function updatePricingIx(asset, expiryIndex) {
             zetaGroup: subExchange.zetaGroupAddress,
             greeks: subExchange.greeksAddress,
             oracle: subExchange.zetaGroup.oracle,
+            oracleBackupFeed: subExchange.zetaGroup.oracleBackupFeed,
+            oracleBackupProgram: constants.CHAINLINK_PID,
             perpMarket: marketData.address,
             perpBids: subExchange.markets.perpMarket.serumMarket.bidsAddress,
             perpAsks: subExchange.markets.perpMarket.serumMarket.asksAddress,
@@ -1034,6 +1071,8 @@ function initializeMarketStrikesIx(asset) {
             state: exchange_1.exchange.stateAddress,
             zetaGroup: subExchange.zetaGroupAddress,
             oracle: subExchange.zetaGroup.oracle,
+            oracleBackupFeed: subExchange.zetaGroup.oracleBackupFeed,
+            oracleBackupProgram: constants.CHAINLINK_PID,
         },
     });
 }
@@ -1403,7 +1442,7 @@ function closeSpreadAccountIx(zetaGroup, spreadAccount, user) {
     });
 }
 exports.closeSpreadAccountIx = closeSpreadAccountIx;
-function positionMovementIx(asset, zetaGroup, marginAccount, spreadAccount, user, greeks, oracle, movementType, movements) {
+function positionMovementIx(asset, zetaGroup, marginAccount, spreadAccount, user, greeks, oracle, oracleBackupFeed, oracleBackupProgram, movementType, movements) {
     return exchange_1.exchange.program.instruction.positionMovement(types.toProgramMovementType(movementType), movements, {
         accounts: {
             state: exchange_1.exchange.stateAddress,
@@ -1413,6 +1452,8 @@ function positionMovementIx(asset, zetaGroup, marginAccount, spreadAccount, user
             authority: user,
             greeks,
             oracle,
+            oracleBackupFeed,
+            oracleBackupProgram,
         },
     });
 }
@@ -1529,3 +1570,15 @@ async function toggleMarketMakerIx(isMarketMaker, zetaGroup, user) {
     });
 }
 exports.toggleMarketMakerIx = toggleMarketMakerIx;
+function editDelegatedPubkeyIx(asset, delegatedPubkey, marginAccount, authority) {
+    return exchange_1.exchange.program.instruction.editDelegatedPubkey(delegatedPubkey, {
+        accounts: {
+            state: exchange_1.exchange.stateAddress,
+            zetaGroup: exchange_1.exchange.getZetaGroupAddress(asset),
+            marginAccount,
+            tokenProgram: spl_token_1.TOKEN_PROGRAM_ID,
+            authority,
+        },
+    });
+}
+exports.editDelegatedPubkeyIx = editDelegatedPubkeyIx;

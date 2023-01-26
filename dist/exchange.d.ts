@@ -121,9 +121,15 @@ export declare class Exchange {
     setLedgerWallet(wallet: any): void;
     private _useLedger;
     private _programSubscriptionIds;
+    get priorityFee(): number;
+    private _priorityFee;
+    get usePriorityFees(): boolean;
+    private _usePriorityFees;
+    toggleUsePriorityFees(microLamportsPerCU?: number): void;
+    updatePriorityFee(microLamportsPerCU: number): void;
     initialize(assets: Asset[], programId: PublicKey, network: Network, connection: Connection, opts: ConfirmOptions, wallet?: types.DummyWallet): Promise<void>;
     initializeZetaState(params: instructions.StateParams, referralAdmin: PublicKey): Promise<void>;
-    initializeZetaGroup(asset: Asset, oracle: PublicKey, pricingArgs: instructions.InitializeZetaGroupPricingArgs, perpArgs: instructions.UpdatePerpParametersArgs, marginArgs: instructions.UpdateMarginParametersArgs, expiryArgs: instructions.UpdateZetaGroupExpiryArgs): Promise<void>;
+    initializeZetaGroup(asset: Asset, oracle: PublicKey, oracleBackupFeed: PublicKey, oracleBackupProgram: PublicKey, pricingArgs: instructions.InitializeZetaGroupPricingArgs, perpArgs: instructions.UpdatePerpParametersArgs, marginArgs: instructions.UpdateMarginParametersArgs, expiryArgs: instructions.UpdateZetaGroupExpiryArgs): Promise<void>;
     load(assets: Asset[], programId: PublicKey, network: Network, connection: Connection, opts: ConfirmOptions, wallet?: types.DummyWallet, throttleMs?: number, callback?: (asset: Asset, event: EventType, data: any) => void): Promise<void>;
     private addSubExchange;
     getSubExchange(asset: Asset): SubExchange;

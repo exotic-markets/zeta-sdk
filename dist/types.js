@@ -45,6 +45,7 @@ var OrderType;
     OrderType[OrderType["POSTONLY"] = 1] = "POSTONLY";
     OrderType[OrderType["FILLORKILL"] = 2] = "FILLORKILL";
     OrderType[OrderType["IMMEDIATEORCANCEL"] = 3] = "IMMEDIATEORCANCEL";
+    OrderType[OrderType["POSTONLYSLIDE"] = 4] = "POSTONLYSLIDE";
 })(OrderType = exports.OrderType || (exports.OrderType = {}));
 function toProgramOrderType(orderType) {
     if (orderType == OrderType.LIMIT)
@@ -55,6 +56,8 @@ function toProgramOrderType(orderType) {
         return { fillOrKill: {} };
     if (orderType == OrderType.IMMEDIATEORCANCEL)
         return { immediateOrCancel: {} };
+    if (orderType == OrderType.POSTONLYSLIDE)
+        return { postOnlySlide: {} };
 }
 exports.toProgramOrderType = toProgramOrderType;
 var Side;
@@ -213,8 +216,10 @@ function fromProgramOrderCompleteType(orderCompleteType) {
 exports.fromProgramOrderCompleteType = fromProgramOrderCompleteType;
 function defaultOrderOptions() {
     return {
-        explicitTIF: true,
-        tifOffset: 0,
+        tifOptions: {
+            expiryOffset: undefined,
+            expiryTs: undefined,
+        },
         orderType: OrderType.LIMIT,
         clientOrderId: 0,
         tag: constants.DEFAULT_ORDER_TAG,
