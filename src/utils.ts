@@ -12,6 +12,7 @@ import {
   sendAndConfirmRawTransaction,
   AccountInfo,
   SystemProgram,
+  ComputeBudgetProgram,
 } from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
@@ -696,7 +697,9 @@ export async function processTransaction(
   let txSig: TransactionSignature;
 
   if (blockhash == undefined) {
-    const recentBlockhash = await provider.connection.getRecentBlockhash();
+    const recentBlockhash = await provider.connection.getLatestBlockhash(
+      commitmentConfig("finalized")
+    );
     tx.recentBlockhash = recentBlockhash.blockhash;
   } else {
     tx.recentBlockhash = blockhash;
@@ -714,6 +717,14 @@ export async function processTransaction(
     .forEach((kp) => {
       tx.partialSign(kp);
     });
+
+  if (Exchange.usePriorityFees) {
+    tx.instructions.unshift(
+      ComputeBudgetProgram.setComputeUnitPrice({
+        microLamports: Exchange.priorityFee,
+      })
+    );
+  }
 
   if (useLedger) {
     tx = await Exchange.ledgerWallet.signTransaction(tx);
@@ -1217,6 +1228,26 @@ export async function crankMarket(
   await processTransaction(Exchange.provider, tx);
 }
 
+/*
+ * prune expired TIF orders from a list of market indices.
+ */
+export async function pruneExpiredTIFOrders(
+  asset: Asset,
+  marketIndices: number[]
+) {
+  let ixs = marketIndices.map((i) => {
+    return instructions.pruneExpiredTIFOrdersIx(asset, i);
+  });
+
+  let txs = splitIxsIntoTx(ixs, 5);
+
+  await Promise.all(
+    txs.map(async (tx) => {
+      return processTransaction(Exchange.provider, tx);
+    })
+  );
+}
+
 export async function expireSeries(asset: Asset, expiryTs: anchor.BN) {
   let subExchange = Exchange.getSubExchange(asset);
   let [settlement, settlementNonce] = await getSettlement(
@@ -1231,6 +1262,8 @@ export async function expireSeries(asset: Asset, expiryTs: anchor.BN) {
       state: Exchange.stateAddress,
       zetaGroup: subExchange.zetaGroupAddress,
       oracle: subExchange.zetaGroup.oracle,
+      oracleBackupFeed: subExchange.zetaGroup.oracleBackupFeed,
+      oracleBackupProgram: constants.CHAINLINK_PID,
       settlementAccount: settlement,
       payer: Exchange.provider.wallet.publicKey,
       systemProgram: SystemProgram.programId,
@@ -1646,27 +1679,65 @@ export function getProductLedger(marginAccount: MarginAccount, index: number) {
   return marginAccount.productLedgers[index];
 }
 
-export function getTIFOffset(
-  marketInfo: Market,
-  explicitTIF: boolean,
-  tifOffset: number
-) {
-  if (explicitTIF) {
-    return tifOffset;
+export function getTIFOffset(marketInfo: Market, tifOptions: types.TIFOptions) {
+  if (
+    tifOptions.expiryOffset == undefined &&
+    tifOptions.expiryTs == undefined
+  ) {
+    return 0;
+  }
+
+  if (
+    tifOptions.expiryOffset != undefined &&
+    tifOptions.expiryTs != undefined
+  ) {
+    throw new Error("Cannot set both expiryOffset and expiryTs");
   }
 
   let currEpochStartTs = marketInfo.serumMarket.epochStartTs.toNumber();
   let epochLength = marketInfo.serumMarket.epochLength.toNumber();
-
+  let epochEnd = currEpochStartTs + epochLength;
   let now = Exchange.clockTimestamp;
 
-  let epochStartTsToUse: number = 0;
-  if (currEpochStartTs + epochLength < now) {
-    epochStartTsToUse = now - (now % epochLength);
-  } else {
-    epochStartTsToUse = currEpochStartTs;
+  // get correct epoch end in case where serumMarket data is not up to date
+  if (now > epochEnd) {
+    currEpochStartTs = now - (now % epochLength);
+    epochEnd = currEpochStartTs + epochLength;
   }
-  return now - epochStartTsToUse + tifOffset;
+
+  if (tifOptions.expiryOffset != undefined) {
+    if (tifOptions.expiryOffset <= 0) {
+      throw new Error("Invalid expiry offset");
+    }
+
+    let desiredExpiryTs = now + tifOptions.expiryOffset;
+    let desiredOffset = desiredExpiryTs % epochLength;
+
+    if (epochEnd >= desiredExpiryTs) {
+      return desiredOffset;
+    } else {
+      // Cap the offset at the end of the cycle.
+      return epochLength;
+    }
+  }
+
+  if (tifOptions.expiryTs != undefined) {
+    if (tifOptions.expiryTs < Exchange.clockTimestamp) {
+      throw new Error("Cannot place an expired order");
+    }
+
+    let tifOffset = tifOptions.expiryTs - currEpochStartTs;
+
+    if (tifOffset > epochLength) {
+      return epochLength;
+    }
+
+    if (tifOffset <= 0) {
+      throw new Error("Cannot place an expired order");
+    }
+
+    return tifOffset;
+  }
 }
 
 export function isOrderExpired(

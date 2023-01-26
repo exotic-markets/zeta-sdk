@@ -3,15 +3,52 @@
 All notable changes to this project will be documented in this file.
 Version changes are pinned to SDK releases.
 
+## [0.21.3] 2023-01-24
+
+- utils: Specify `finalized` commitment for blockhash in processTransaction. ([#193](https://github.com/zetamarkets/sdk/pull/193))
+
+## [0.21.2] 2023-01-24
+
+- general: add ability to toggle compute units per transaction. ([#194](https://github.com/zetamarkets/sdk/pull/194))
+
+## [0.21.1] 2023-01-23
+
+- client: Return txSigs properly on cancelAllOrders. ([#192](https://github.com/zetamarkets/sdk/pull/192))
+
+## [0.21.0] 2023-01-21
+
 ### Breaking
 
-- Remove placeOrder and placePerpOrder VX from subClient replace with placeOrder only across client and subClient
-- Remove arguments and use types.OrderOptions now for OrderType, clientOrderId, tag, TIFOffset, etc;
+- Add backup oracle (Chainlink) to program code. This adds an extra account to most instructions so an SDK upgrade is required to trade. ([#189](https://github.com/zetamarkets/sdk/pull/189))
 
-## [#0.19.0]
+## [0.20.0] 2023-01-18
+
+- general: Add delegated account functionality to program and SDK. ([#187](https://github.com/zetamarkets/sdk/pull/187))
+
+## [0.19.3] 2023-01-09
+
+- client: add perp functionality to all cancel+place functions in subclient. ([#186](https://github.com/zetamarkets/sdk/pull/186))
+
+## [0.19.2] 2023-01-05
+
+- cleanup: add option for setting expiry timestamp on tif orders. ([#183](https://github.com/zetamarkets/sdk/pull/183))
+- general: add instruction to prune expired orders for expired TIF orders. ([#184](https://github.com/zetamarkets/sdk/pull/184))
+
+## [0.19.1] 2022-12-23
+
+- general: Add user order filtering for expired orders. ([#181](https://github.com/zetamarkets/sdk/pull/181)
+- cleanup: refactor tif in order options for dev ux. ([#182](https://github.com/zetamarkets/sdk/pull/182))
+
+## [0.19.0] 2022-12-22
 
 - general: Port serum sdk into the zetamarkets sdk. ([#175](https://github.com/zetamarkets/sdk/pull/175))
 - general: Add TIF orders into zetamarkets sdk. ([#176](https://github.com/zetamarkets/sdk/pull/176))
+- general: Add PostOnlySlide order type. ([#178](https://github.com/zetamarkets/sdk/pull/178))
+
+### Breaking
+
+- Remove placeOrder and placePerpOrder VX from subClient replace with placeOrder only across client and subClient
+- Remove arguments and use types.OrderOptions now for orderType, clientOrderId, tag, TIFOffset, etc;
 
 ## [0.18.2] 2022-12-05
 
